@@ -17,3 +17,11 @@ FFmpeg and ImageMagick exist in precompiled versions for various platforms:
 
 **Installation**
 
+- Download or Clone the Server from ```https://github.com/urshofer/automatic-cinema-server```
+- Install the dependencies: ```npm install``` or ```sudo npm install```in the directory you just checked out the files
+- Edit the configuration file: _config.js
+
+**Run the Server**
+
+- To start the server in non daemon mode: ```node acs.js```
+- To run the script in daemon mode, you can install forever: ```sudo npm install forever -g```. After that, you can run the script in the background with the command ```forever start acs.js```. If you want to stop it you can do it with ```forever stop acs.js```

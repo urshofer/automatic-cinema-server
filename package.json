@@ -1,0 +1,49 @@
+{
+  "name": "automatic-cinema-server",
+  "version": "0.0.1",
+  "description": "Automatic Cinema System: Content Server",
+  "main": "acs.js",
+  "scripts": {
+    "start": "node acs.js",
+    "test": "mocha acs.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/azat-co/rest-api-express.git"
+  },
+  "author": "Urs Hofer",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/azat-co/rest-api-express/issues"
+  },
+  "dependencies": {
+    "mongoskin": "1.4.1",
+    "express": "4.8.1",
+    "body-parser": "1.0.2",
+	"cors": "2.4.2",
+	"mime": "1.2.11",
+	"q": "1.0.1",
+	"fluent-ffmpeg": "2.0.0-rc2",
+	"gm": "1.16.0",
+	"formidable": "1.0.15"
+  },
+  "devDependencies": {
+    "expect.js": "0.3.1",
+    "mocha": "1.18.2",
+    "superagent": "0.17.0"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+		
+		
+		
+		

@@ -60,6 +60,16 @@ var db = mongoskin.db(config.mongo, {
 	safe: true
 })
 
+Array.prototype.clean = function(deleteValue) {
+  for (var i = 0; i < this.length; i++) {
+    if (this[i] == deleteValue) {         
+      this.splice(i, 1);
+      i--;
+    }
+  }
+  return this;
+};
+
 
 var users = db.collection('users');
 users.ensureIndex({
@@ -266,6 +276,24 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 			break;
 
 		case 'content':
+			for (var d in req.body.data) if (req.body.data.hasOwnProperty(d)) {
+				var _keywords = req.body.data[d].Keywords;
+				var _valid = {};
+				for (var k in _keywords) if (_keywords.hasOwnProperty(k)) {
+					_valid[_keywords[k][0]] = _keywords[k][0];
+				}
+				var _nodes = req.body.data[d].Nodes;
+				for (var n in _nodes) if (_nodes.hasOwnProperty(n)) {
+					if(!(_nodes[n][0] in _valid && _nodes[n][1] in _valid)) {
+						console.log("Delete Node")
+						_nodes[n] = null;					
+					}
+				}
+				_nodes.clean(null);
+			}
+			
+			
+			
 			req.current.shows[req.current.options.show].contents[req.current.options.content].data = req.body.data;
 			break;
 

@@ -255,17 +255,19 @@ module.exports = function(c,utils) {
 		for (var n in content[dim].Nodes) if (content[dim].Nodes.hasOwnProperty(n)) {					
 			var node = content[dim].Nodes[n];
 			if ( (node[2]>2 && node[0]==ret.keyword) || (node[2]<=2 && (node[0]==ret.keyword || node[1]==ret.keyword)) ) {
+
+				var _topos = content[dim].Keywords[module._getkeywordindex(dim,node[1]==ret.keyword?node[0]:node[1],content)];
 				ret.nodes.push({
 					ref		:n,
 					dim		:dim,
 					to		:node[1]==ret.keyword?node[0]:node[1],
-					topos	:content[dim].Keywords[module._getkeywordindex(dim,node[1]==ret.keyword?node[0]:node[1],content)][1],					
+					topos	:_topos?_topos[1]:false,					
 					arrow	:node[2]>2?1:0,
 					color	:node[2]%2?"green":"red",
-					distance:module._distance(
+					distance:_topos?module._distance(
 								content[dim].Keywords[module._getkeywordindex(dim,node[0],content)][1], 
 								content[dim].Keywords[module._getkeywordindex(dim,node[1],content)][1]
-							)
+							) : false
 				})
 			}
 		}

@@ -69,12 +69,13 @@ var fs = require('fs'),
 		// Check temporary dir:
 		fs.exists(c.upload_dir, function (exists) {
 		  if (!exists) {
-	  		console.log("create temp dir")
+	  		if (!c.quiet) console.log("create temp dir")
   			fs.mkdirSync(c.upload_dir)
 		  }
 		});
 		
-		console.log("export ready")
+		console.log("- utilities ready                                   -")
+
 		
 		module.guid = (function() {
 		  function s4() {
@@ -164,7 +165,7 @@ var fs = require('fs'),
 				safe: true,
 				multi: false
 			}, function(e, result) {
-				if (e) console.log("Store error")
+				if (e && !c.quiet) console.log("Store error")
 				if (e || result == null) deferred.resolve(module.error(100, "Store Error"));
 				else deferred.resolve(true)
 			})
@@ -176,7 +177,7 @@ var fs = require('fs'),
 			var gs = db.gridStore(path.basename(filename), 'w')
 			gs.writeFile(filename, function(err, fileInfo) {
 				if (err) {
-					console.log("[gridstore] Store Error: " + path.basename(filename))					
+					if (!c.quiet) console.log("[gridstore] Store Error: " + path.basename(filename))					
 					deferred.resolve(false)
 				} else {
 					deferred.resolve(path.basename(filename))
@@ -191,7 +192,7 @@ var fs = require('fs'),
 			var gs = db.gridStore(path.basename(filename), 'r')
 			gs.unlink(function(err, fileInfo) {
 				if (err) {
-					console.log("[gridstore] Delete Error: " + path.basename(filename))
+					if (!c.quiet) console.log("[gridstore] Delete Error: " + path.basename(filename))
 					deferred.resolve(false)
 				} else {
 					deferred.resolve(true)
@@ -345,7 +346,7 @@ var fs = require('fs'),
 			var command = ffmpeg();			
 			command.input(filepath)
 			  .on('error', function(err) {
-			    console.log(err);
+			    if (!c.quiet) console.log(err);
 			  })
 			  .on('filenames', function(fn){
 				thumbs = fn;				  			  	
@@ -427,10 +428,10 @@ var fs = require('fs'),
 					deferred.resolve(module.error(110, err.message));
 				} else {
 					files.url.name = module.checkfile(files.url.name, req.current.shows[req.current.options.show].clips);
-					console.log("Checking upload for " + files.url.name)
+					if (!c.quiet) console.log("Checking upload for " + files.url.name)
 					// Text Parsing: Sync Function
 					if (mime.lookup(files.url.path) == 'text/plain') {
-						console.log("TEXT")
+						if (!c.quiet) console.log("TEXT")
 						var media_type = "text"
 						var content = fs.readFileSync(files.url.path).toString()
 						var lines = content.split(/\r\n|\r|\n/);
@@ -470,7 +471,7 @@ var fs = require('fs'),
 					}
 					// Image Parsing: 
 					else if (c.image_mime.indexOf(mime.lookup(files.url.path)) != -1) {
-						console.log("IMAGE")
+						if (!c.quiet) console.log("IMAGE")
 						var media_type = "image"
 						var channel_id = module.findchannel(files.url.name, req.current.shows[req.current.options.show].channels, media_type);
 						if (channel_id === false) {
@@ -627,14 +628,14 @@ var fs = require('fs'),
 			var upd = false;
 		    for (var o in data[dim].Objects) if (data[dim].Objects.hasOwnProperty(o)) {
 				if (data[dim].Objects[o][0]==name && data[dim].Objects[o][3]==true) {
-					console.log("[upd] Annotating " + name + " in " + dim + " on " + x + "/" + y)
+					if (!c.quiet) console.log("[upd] Annotating " + name + " in " + dim + " on " + x + "/" + y)
 					data[dim].Objects[o][1] = [x,y]
 					data[dim].Objects[o][3] = false
 					upd = true;
 				}
 			}
 			if (upd===false) {
-				console.log("[add] Annotating " + name + " in " + dim + " on " + x + "/" + y)
+				if (!c.quiet) console.log("[add] Annotating " + name + " in " + dim + " on " + x + "/" + y)
 				data[dim].Objects.push([name,[x,y],prev,false])
 			}
 		}
@@ -669,15 +670,15 @@ var fs = require('fs'),
 							
 				}
 			}				
-			console.log("[sync] Normalizing Elements:")
-		    for (var c in max) if (max.hasOwnProperty(c)) {
-				console.log("       - - - - - - - - - - - - - - - - - - - - - - - -")
-				console.log("       Channel: " + c)
-			    for (var p in max[c]) if (max[c].hasOwnProperty(p)) {
-					console.log("       " + p + " max : " + max[c][p])
-					console.log("       " + p + " min : " + min[c][p])					
+			if (!c.quiet) console.log("[sync] Normalizing Elements:")
+		    for (var cl in max) if (max.hasOwnProperty(cl)) {
+				if (!c.quiet) console.log("       - - - - - - - - - - - - - - - - - - - - - - - -")
+				if (!c.quiet) console.log("       Channel: " + cl)
+			    for (var p in max[cl]) if (max[cl].hasOwnProperty(p)) {
+					if (!c.quiet) console.log("       " + p + " max : " + max[cl][p])
+					if (!c.quiet) console.log("       " + p + " min : " + min[cl][p])					
 			    }		    	
-				console.log("       - - - - - - - - - - - - - - - - - - - - - - - -")
+				if (!c.quiet) console.log("       - - - - - - - - - - - - - - - - - - - - - - - -")
 		    }
 		}
 
@@ -686,6 +687,7 @@ var fs = require('fs'),
 		module.synchronize = function(users, req, db){
 			var deferred = q.defer();
 		    process.nextTick(function(){
+
 
 				// Prepare Sync Data
 				// - params{channel:params...}
@@ -735,7 +737,7 @@ var fs = require('fs'),
 					}
 			    }
 				show.clips.clean(null);
-				console.log((count>0?"\033[31m":"") + "[sync] Deleted " + count + " Files" + (count>0?"\033[0m":""))		
+				if (!c.quiet) console.log((count>0?"\033[31m":"") + "[sync] Deleted " + count + " Files" + (count>0?"\033[0m":""))		
 
 				module.normalize(show.clips)
 
@@ -746,15 +748,15 @@ var fs = require('fs'),
 					dims[d]=currentcontent.data[d].id;
 					dimkey[currentcontent.data[d].id]=d;
 				}
-				console.log("[sync] Loaded Dimensions")	
+				if (!c.quiet) console.log("[sync] Loaded Dimensions")	
     			for (var i = 0, len = show.clips.length; i < len; i++) {
-					var c = module.findchannelbyid(show.clips[i].channel, show.channels);
-					if (c) {
-						params[c.name] = show.clips[i].parameter;
+					var ch = module.findchannelbyid(show.clips[i].channel, show.channels);
+					if (ch) {
+						params[ch.name] = show.clips[i].parameter;
 						clipnames[show.clips[i].name] = show.clips[i].thumb;
 					}
 				}					
-				console.log("[sync] Loaded Clips, Channels and Parameters")		
+				if (!c.quiet) console.log("[sync] Loaded Clips, Channels and Parameters")		
 				
 				// Step two: Sync styles w. clips and content
 				// ---------------------------------------------
@@ -780,7 +782,7 @@ var fs = require('fs'),
 							currentstyle.data[ch].clean(null);
 							if (!f) {
 								currentstyle.data[ch].push({key:p,type:4,legends:["Weight","Value"],id:module.guid()})
-								console.log("[sync] push parameter " + p)
+								if (!c.quiet) console.log("[sync] push parameter " + p)
 							}
 						}
 
@@ -800,7 +802,7 @@ var fs = require('fs'),
 							currentstyle.data[ch].clean(null);
 							if (!f) {
 								currentstyle.data[ch].push({key:d,type:3,legends:["Importance","Tension"], id:dims[d]})
-								console.log("[sync] push dimension " + d)
+								if (!c.quiet) console.log("[sync] push dimension " + d)
 							}
 						}
 						// Sync Basic Parameters (if not already added when creating)	
@@ -820,7 +822,7 @@ var fs = require('fs'),
 							currentstyle.data[ch].clean(null);
 							if (!f) {
 								currentstyle.data[ch].push(empty[e])
-								console.log("[sync] push default " + empty[e].key)
+								if (!c.quiet) console.log("[sync] push default " + empty[e].key)
 							}						
 						}
 					
@@ -836,7 +838,7 @@ var fs = require('fs'),
 						// Clean out Empty Channels
 						for (var v in currentstyle.data) if (currentstyle.data.hasOwnProperty(v)) {
 							if (module.channelexists(v,show.channels)===false) {
-								console.log("---")
+								if (!c.quiet) console.log("---")
 								delete currentstyle.data[v];
 							}
 						}
@@ -847,7 +849,7 @@ var fs = require('fs'),
 
 
 
-				console.log("[sync] Synced " + count + " Styles")							
+				if (!c.quiet) console.log("[sync] Synced " + count + " Styles")							
 
 				// Step three: Sync clips with contents
 				// ---------------------------------------------
@@ -860,7 +862,7 @@ var fs = require('fs'),
 					var dims = show.contents[i].data		
 					if (dims==null) dims = module.createemptydata("addcontent")									
 					for (var d in dims) if (dims.hasOwnProperty(d)) {
-						for (var c in clipnames) if (clipnames.hasOwnProperty(c)) {
+						for (var cl in clipnames) if (clipnames.hasOwnProperty(cl)) {
 							var f = false;
 							if (dims[d].Objects == null) {
 								dims[d].Objects = []
@@ -868,7 +870,7 @@ var fs = require('fs'),
 							for (var o in dims[d].Objects) if (dims[d].Objects.hasOwnProperty(o)) {
 
 								// Mark to add
-								if (dims[d].Objects[o][0] == c) {
+								if (dims[d].Objects[o][0] == cl) {
 									f = true;
 								}
 								// Step One: Delete nonexisting Material
@@ -879,7 +881,7 @@ var fs = require('fs'),
 							}	
 							dims[d].Objects.clean(null);
 							if (f===false) {
-								dims[d].Objects.push([c,[50,50],clipnames[c],true])
+								dims[d].Objects.push([cl,[50,50],clipnames[cl],true])
 								add++;
 							}
 							else {
@@ -889,7 +891,7 @@ var fs = require('fs'),
 					}				
 					count++
 				}	
-				console.log("[sync] Synced " + count + " Contents (Del: "+del+" Add: "+add+ " Keep: "+keep+ ")")
+				if (!c.quiet) console.log("[sync] Synced " + count + " Contents (Del: "+del+" Add: "+add+ " Keep: "+keep+ ")")
 
 
 				// Step four: Sync content with targets
@@ -933,7 +935,7 @@ var fs = require('fs'),
 					}
 					count++
 				}
-				console.log("[sync] Synced " + count + " Targets (Del: "+del+" Add: "+add+ " Keep: "+ren+ ")")
+				if (!c.quiet) console.log("[sync] Synced " + count + " Targets (Del: "+del+" Add: "+add+ " Keep: "+ren+ ")")
 				
 				narration.reset(req, null, null, true)
 								

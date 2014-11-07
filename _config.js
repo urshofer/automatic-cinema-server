@@ -16,6 +16,7 @@ module.exports = {
 		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
 		convert_path: 		"/usr/local/bin/convert",
 		mongo: 				'mongodb://@localhost:27017/automaticcinema',
+		quiet: 				true, 
 		
 		/* 
 		Normally, parameters below here don't need to be changed 

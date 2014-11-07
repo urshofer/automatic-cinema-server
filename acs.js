@@ -30,10 +30,9 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 */
 
-
-
-
-
+console.log("-----------------------------------------------------")
+console.log("- Automatic Cinema Server                           -")
+console.log("-                                                   -")
 
 /* Load Library */
 
@@ -57,8 +56,21 @@ var express = require('express'),
 /* Database Setup */
 
 var db = mongoskin.db(config.mongo, {
-	safe: true
+	safe: true,
+	auto_reconnect: true
 })
+
+db.open(function (err) {
+	if (err) {
+		console.log("-----------------------------------------------------")
+		console.log("- Could not connect to MongoDB. Make sure you have  -")
+		console.log("- a Database running and the _config file correctly -")	
+		console.log("- set up.                                           -")		
+		console.log("-----------------------------------------------------")
+		process.exit()
+	}
+})
+ 
 
 Array.prototype.clean = function(deleteValue) {
   for (var i = 0; i < this.length; i++) {
@@ -417,7 +429,7 @@ app.get('/Channels/:checkSession/:channel', function(req, res, next) {
 })
 
 app.get('/Channels/:checkSession', function(req, res, next) {
-	console.log("[channels] active channel")
+	if (!config.quiet) console.log("[channels] active channel")
 	if (req.current.options.show == null) {
 		res.send(utils.error(103));
 		return;
@@ -940,5 +952,6 @@ app.get('/', function(req, res, next) {
 })
 
 
+console.log("-----------------------------------------------------")
 
 app.listen(config.port)

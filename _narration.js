@@ -40,8 +40,8 @@ var q = require("q"),
 module.exports = function(c,utils) {
 	var module = {};
 	var time = 0;
-	console.log("narration ready")
-	
+	console.log("- narration ready                                   -")
+
 	
 	module.reset = function(req, users, channel_id_only, force){
 		if (channel_id_only==null) channel_id_only=false;
@@ -63,7 +63,7 @@ module.exports = function(c,utils) {
 				continue;
 			}
 			try {
-				console.log("[narration] resetting channel " + show.channels[i].name)
+				if (!c.quiet) console.log("[narration] resetting channel " + show.channels[i].name)
 				var style   = show.styles[req.current.options.style].data[show.channels[i].name];
 				var clips	= show.clips.filter(function(el) {return el.channel == show.channels[i].id});		
 			}
@@ -148,7 +148,7 @@ module.exports = function(c,utils) {
 		if (users != null) {
 			var deferred = q.defer();
 			utils.update(users, req).then(function(data) {
-				console.log("[narration] reset stored")
+				if (!c.quiet) console.log("[narration] reset stored")
 				if (data.Error) deferred.resolve(false);
 				else deferred.resolve(true);				
 			});
@@ -342,7 +342,7 @@ module.exports = function(c,utils) {
 		if (narration.current===false || narration.cursor===false) {
 			narration.current = narration.master
 			narration.cursor  = narration.dimensions[narration.current].target
-			console.log("[_choosedimension] Init: " + narration.current)
+			if (!c.quiet) console.log("[_choosedimension] Init: " + narration.current)
 		}
 		else if (Object.keys( narration.dimensions).length == 1) {
 			return false;
@@ -378,7 +378,7 @@ module.exports = function(c,utils) {
 				}
 			}
 			else {
-				console.log("[_choosedimension] Kept same dimension. Threshold too high ("+ threshold +" / " + narration.dimensions[narration.current].count +")")
+				if (!c.quiet) console.log("[_choosedimension] Kept same dimension. Threshold too high ("+ threshold +" / " + narration.dimensions[narration.current].count +")")
 			}
 		}
 		if (switched)
@@ -478,14 +478,14 @@ module.exports = function(c,utils) {
 //				console.log(narration.usage)								
 				return;
 			}
-			var c = narration.usage.clips[narration.current][clips[i].id].coords;
+			var _c = narration.usage.clips[narration.current][clips[i].id].coords;
 
 			var _d = []
-			for (var n in c) if (c.hasOwnProperty(n)) {
-				var d_a = module._distance(c[n], narration.cursor);
+			for (var n in _c) if (_c.hasOwnProperty(n)) {
+				var d_a = module._distance(_c[n], narration.cursor);
 				var d_b = 0
 				if (narration.tonode.topos) {
-					var h = (module._distance(c[n], narration.tonode.topos)+module._distance(c[n], base)-module._distance(base, narration.tonode.topos));
+					var h = (module._distance(_c[n], narration.tonode.topos)+module._distance(_c[n], base)-module._distance(base, narration.tonode.topos));
 					var d_b = (d_a * Math.pow(h+1,3))
 				}
 				d_b *= narration.dimensions[narration.current].logic;
@@ -493,7 +493,7 @@ module.exports = function(c,utils) {
 
 				_d.push({
 					score : d_a + d_b,
-					cursor: [parseFloat(c[n][0]),parseFloat(c[n][1])]
+					cursor: [parseFloat(_c[n][0]),parseFloat(_c[n][1])]
 				})			
 			}
 			// If Multiple Coordinates, reduce it to one 
@@ -620,13 +620,13 @@ module.exports = function(c,utils) {
 //				console.log("channel " + channel.name + " is master")
 				if (narration.time > req.current.options.time * 1000) {
 					module.reset(req,null,channel.id);
-					console.log("reset master: " + channel.name)
+					if (!c.quiet) console.log("reset master: " + channel.name)
 					
 					// Force Reset Slaves.
-					for (var c in show.channels) if (show.channels.hasOwnProperty(c)) {	
-						if (show.channels[c].master == channel.name) {
-							console.log("[narration] resetting slave channel " + show.channels[c].name)
-							module.reset(req, null, show.channels[c].id, true);
+					for (var _c in show.channels) if (show.channels.hasOwnProperty(_c)) {	
+						if (show.channels[_c].master == channel.name) {
+							if (!c.quiet) console.log("[narration] resetting slave channel " + show.channels[_c].name)
+							module.reset(req, null, show.channels[_c].id, true);
 						}
 					}
 				}
@@ -699,8 +699,8 @@ module.exports = function(c,utils) {
 				clip = {};
 			
 			
-			for (var c in clips) if (clips.hasOwnProperty(c) && clips[c].id==clipid) {
-				clip = clips[c];
+			for (var _c in clips) if (clips.hasOwnProperty(_c) && clips[_c].id==clipid) {
+				clip = clips[_c];
 				break;
 			}
 
@@ -782,7 +782,7 @@ module.exports = function(c,utils) {
 		 
 			// Reset Narration in case there is no to node
 			if (narration.tonode == null || narration.tonode.topos == null) {
-				console.log("[narration] Nothing found...")										
+				if (!c.quiet) console.log("[narration] Nothing found...")										
 				narration.cursor = false
 			}
 

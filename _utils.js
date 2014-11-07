@@ -754,7 +754,7 @@ var fs = require('fs'),
 						clipnames[show.clips[i].name] = show.clips[i].thumb;
 					}
 				}					
-				console.log("[sync] Loaded Clips and Parameters")		
+				console.log("[sync] Loaded Clips, Channels and Parameters")		
 				
 				// Step two: Sync styles w. clips and content
 				// ---------------------------------------------
@@ -783,64 +783,66 @@ var fs = require('fs'),
 								console.log("[sync] push parameter " + p)
 							}
 						}
-					}
-					// Sync Dimensions by key
-					for (var d in dims)  {
-						if (currentstyle.data[ch]==null) currentstyle.data[ch] = []
-						var f = false;
-						for (var v in currentstyle.data[ch]) if (currentstyle.data[ch].hasOwnProperty(v)) {
-							if (currentstyle.data[ch][v].id==dims[d]) {
-								f = true;
-								currentstyle.data[ch][v].key = d;
-							}
-							if (currentstyle.data[ch][v].type==3 && dimkey[currentstyle.data[ch][v].id]==null) 
-								currentstyle.data[ch][v] = null;
-						}
-						currentstyle.data[ch].clean(null);
-						if (!f) {
-							currentstyle.data[ch].push({key:d,type:3,legends:["Importance","Tension"], id:dims[d]})
-							console.log("[sync] push dimension " + d)
-						}
-					}
-					// Sync Basic Parameters (if not already added when creating)	
-					var statics = [];
 
-					for (var e in empty) if (empty.hasOwnProperty(e)) {
-						if (currentstyle.data[ch]==null) currentstyle.data[ch] = []
-						var f = false;
-						for (var v in currentstyle.data[ch]) if (currentstyle.data[ch].hasOwnProperty(v)) {
-							// if (currentstyle.data[ch][v]==null) continue;
-							if (currentstyle.data[ch][v].key==empty[e].key) {
-								f = true;
+						// Sync Dimensions by key
+						for (var d in dims)  {
+							if (currentstyle.data[ch]==null) currentstyle.data[ch] = []
+							var f = false;
+							for (var v in currentstyle.data[ch]) if (currentstyle.data[ch].hasOwnProperty(v)) {
+								if (currentstyle.data[ch][v].id==dims[d]) {
+									f = true;
+									currentstyle.data[ch][v].key = d;
+								}
+								if (currentstyle.data[ch][v].type==3 && dimkey[currentstyle.data[ch][v].id]==null) {
+									currentstyle.data[ch][v] = null;
+								}
 							}
-							if (currentstyle.data[ch][v].type==2 && emptykey[currentstyle.data[ch][v].key]==null) 
-								currentstyle.data[ch][v] = null;
+							currentstyle.data[ch].clean(null);
+							if (!f) {
+								currentstyle.data[ch].push({key:d,type:3,legends:["Importance","Tension"], id:dims[d]})
+								console.log("[sync] push dimension " + d)
+							}
 						}
-						currentstyle.data[ch].clean(null);
-						if (!f) {
-							currentstyle.data[ch].push(empty[e])
-							console.log("[sync] push default " + empty[e].key)
-						}						
-					}
+						// Sync Basic Parameters (if not already added when creating)	
+						var statics = [];
+
+						for (var e in empty) if (empty.hasOwnProperty(e)) {
+							if (currentstyle.data[ch]==null) currentstyle.data[ch] = []
+							var f = false;
+							for (var v in currentstyle.data[ch]) if (currentstyle.data[ch].hasOwnProperty(v)) {
+								// if (currentstyle.data[ch][v]==null) continue;
+								if (currentstyle.data[ch][v].key==empty[e].key) {
+									f = true;
+								}
+								if (currentstyle.data[ch][v].type==2 && emptykey[currentstyle.data[ch][v].key]==null) 
+									currentstyle.data[ch][v] = null;
+							}
+							currentstyle.data[ch].clean(null);
+							if (!f) {
+								currentstyle.data[ch].push(empty[e])
+								console.log("[sync] push default " + empty[e].key)
+							}						
+						}
 					
 											
 						
-					// Clean out wrong elements
-					for (var v in currentstyle.data[ch]) if (currentstyle.data[ch].hasOwnProperty(v)) {
-						if (currentstyle.data[ch][v].type==null) 
-							currentstyle.data[ch][v] = null;
-					}											
-					currentstyle.data[ch].clean(null);
+						// Clean out wrong elements
+						for (var v in currentstyle.data[ch]) if (currentstyle.data[ch].hasOwnProperty(v)) {
+							if (currentstyle.data[ch][v].type==null) 
+								currentstyle.data[ch][v] = null;
+						}											
+						currentstyle.data[ch].clean(null);
 
-					// Clean out Empty Channels
-					for (var v in currentstyle.data) if (currentstyle.data.hasOwnProperty(v)) {
-						if (module.channelexists(v,show.channels)===false) {
-							console.log("---")
-							delete currentstyle.data[v];
+						// Clean out Empty Channels
+						for (var v in currentstyle.data) if (currentstyle.data.hasOwnProperty(v)) {
+							if (module.channelexists(v,show.channels)===false) {
+								console.log("---")
+								delete currentstyle.data[v];
+							}
 						}
-					}
 
-					count++
+						count++
+					}
 				}	
 
 

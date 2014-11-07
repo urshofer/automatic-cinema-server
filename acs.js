@@ -283,13 +283,15 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 					_valid[_keywords[k][0]] = _keywords[k][0];
 				}
 				var _nodes = req.body.data[d].Nodes;
-				for (var n in _nodes) if (_nodes.hasOwnProperty(n)) {
-					if(!(_nodes[n][0] in _valid && _nodes[n][1] in _valid)) {
-						console.log("Delete Node")
-						_nodes[n] = null;					
+				if (_nodes != null) {
+					for (var n in _nodes) if (_nodes.hasOwnProperty(n)) {
+						if(!(_nodes[n][0] in _valid && _nodes[n][1] in _valid)) {
+							console.log("Delete Node")
+							_nodes[n] = null;					
+						}
 					}
+					_nodes.clean(null);
 				}
-				_nodes.clean(null);
 			}
 			
 			

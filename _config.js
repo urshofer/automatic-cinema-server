@@ -6,7 +6,7 @@
 */
 
 module.exports = {
-	
+
 		/* 
 		You likely need to change these values. The variable __dirname refers always 
 		to the directory in which the server scripts are stored.
@@ -16,10 +16,17 @@ module.exports = {
 		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
 		convert_path: 		"/usr/local/bin/convert",
 		mongo: 				'mongodb://@localhost:27017/automaticcinema',
+		mongo_username: 	false,
+		mongo_password: 	false,
+		
+		/* 
+		Set to true for more verbosity on the command line 
+		*/
+		
 		quiet: 				true, 
 		
 		/* 
-		Normally, parameters below here don't need to be changed 
+		Extended Parameters: Normally, parameters below here don't need to be changed 
 		*/
 		
 		version: 			"acs_2_0",

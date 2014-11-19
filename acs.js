@@ -42,6 +42,7 @@ var express = require('express'),
 	cors = require('cors'),
 	path = require('path')
 	util = require('util'),
+	ip = require("ip"),
 	app = express(),
 	config = require('./_config.js'),
 	utils = require('./_utils.js')(config),
@@ -57,7 +58,9 @@ var express = require('express'),
 
 var db = mongoskin.db(config.mongo, {
 	safe: true,
-	auto_reconnect: true
+	auto_reconnect: true,
+	username : config.mongo_username,
+	password : config.mongo_password
 })
 
 db.open(function (err) {
@@ -951,7 +954,8 @@ app.get('/', function(req, res, next) {
 	res.sendFile(path.join(config.html_dir, 'index.html'));
 })
 
-
+console.log("- Server running on                                 -")
+console.log("- \033[31m" + "http://" + ip.address() + ":" + config.port + "\033[0m                           -")		
 console.log("-----------------------------------------------------")
 
 app.listen(config.port)

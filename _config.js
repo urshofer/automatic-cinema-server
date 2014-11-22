@@ -16,6 +16,8 @@ module.exports = {
 		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
 		convert_path: 		"/usr/local/bin/convert",
 		mongo: 				'mongodb://username:password@host:port/database',
+		port: 				3000
+		
 		
 		/* 
 		Set to true for more verbosity on the command line 
@@ -42,6 +44,5 @@ module.exports = {
 		channel_types: 		["Video","Bild","Musik","Sprache","Text"],
 		fps: 				25,
 		preroll: 			250,
-		emptygap: 			2000,
-		port: 				3000
+		emptygap: 			2000
 }

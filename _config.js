@@ -15,9 +15,7 @@ module.exports = {
 		ffmpeg_path: 		__dirname + '/ffmpeg/osx/ffmpeg',
 		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
 		convert_path: 		"/usr/local/bin/convert",
-		mongo: 				'mongodb://@localhost:27017/automaticcinema',
-		mongo_username: 	false,
-		mongo_password: 	false,
+		mongo: 				'mongodb://username:password@host:port/database',
 		
 		/* 
 		Set to true for more verbosity on the command line 

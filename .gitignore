@@ -30,3 +30,4 @@ node_modules
 # FFMPEG and Node
 ffmpeg
 mongo
+tmp

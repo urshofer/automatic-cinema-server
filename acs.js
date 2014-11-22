@@ -58,9 +58,7 @@ var express = require('express'),
 
 var db = mongoskin.db(config.mongo, {
 	safe: true,
-	auto_reconnect: true,
-	username : config.mongo_username,
-	password : config.mongo_password
+	auto_reconnect: true
 })
 
 db.open(function (err) {

@@ -16,7 +16,7 @@ module.exports = {
 		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
 		convert_path: 		"/usr/local/bin/convert",
 		mongo: 				'mongodb://username:password@host:port/database',
-		port: 				3000
+		port: 				3000,
 		
 		
 		/* 

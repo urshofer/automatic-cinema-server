@@ -10,12 +10,16 @@ module.exports = {
 		/* 
 		You likely need to change these values. The variable __dirname refers always 
 		to the directory in which the server scripts are stored.
+
+		The Scheme for the MongoDB URL is:
+		mongo: 				'mongodb://username:password@host:port/database'
+
 		*/
 	
 		ffmpeg_path: 		__dirname + '/ffmpeg/osx/ffmpeg',
 		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
 		convert_path: 		"/usr/local/bin/convert",
-		mongo: 				'mongodb://username:password@host:port/database',
+		mongo: 				'mongodb://localhost:27017/automaticcinema',		
 		port: 				3000,
 		
 		

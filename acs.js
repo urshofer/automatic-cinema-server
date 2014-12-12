@@ -866,18 +866,13 @@ app.get('/IsNewTimeline/:checkSession/:channel', function(req, res, next) {
 app.get('/Timeline/:checkSession/:channel', function(req, res, next) {
 	var show = req.current.shows[req.current.options.show];
 	var channel = utils.findchannelbyname(req.params.channel,show.channels);
-	if (channel === false) 
+	if (channel === false || show.narration[channel.id] == undefined) 
 		res.send(utils.error(108));
 	else		
-		if (show.narration[channel.id].live != undefined) {
-			res.send({
-				live: show.narration[channel.id].live,
-				data: show.narration[channel.id].history
-			});
-		}
-		else {
-			res.send(utils.error(108));			
-		}
+		res.send({
+			live: show.narration[channel.id].live,
+			data: show.narration[channel.id].history
+		});
 })
 
 

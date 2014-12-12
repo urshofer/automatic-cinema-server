@@ -869,7 +869,7 @@ app.get('/Timeline/:checkSession/:channel', function(req, res, next) {
 	if (channel === false) 
 		res.send(utils.error(108));
 	else		
-		if (show.narration[channel.id].live != null && show.narration[channel.id].history != null) {
+		if (show.narration[channel.id].live != undefined) {
 			res.send({
 				live: show.narration[channel.id].live,
 				data: show.narration[channel.id].history

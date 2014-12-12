@@ -705,7 +705,7 @@ module.exports = function(c,utils) {
 			}
 
 			// Step 4: Select and update narration
-			if (match.total > minscore) {
+			if (match.total > minscore && narration.usage.clips[narration.current]) {
 			
 //				console.log("------------------------")
 //				console.log( clip.name)

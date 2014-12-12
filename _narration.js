@@ -711,7 +711,7 @@ module.exports = function(c,utils) {
 //				console.log( clip.name)
 
 			
-				narration.tension 	+= module._distance(narration.cursor, match.content.cursor);	
+				narration.tension 	+= narration.cursor ? module._distance(narration.cursor, match.content.cursor) : 0;	
 				narration.usage.clips[narration.current][clipid].count++
 				ret = {
 					element : {
@@ -742,7 +742,7 @@ module.exports = function(c,utils) {
 				narration.history.push(
 					{
 						cursor:{
-							Position			: narration.cursor,
+							Position			: narration.cursor||false,
 						},
 						active_dimension		: narration.current,
 						master_dimension		: narration.master,

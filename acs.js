@@ -829,15 +829,20 @@ app.post('/SyncState/:checkSession', function(req, res, next) {
 	ret = {}
 	var show = req.current.shows[req.current.options.show];
     for (var c in show.channels) if (show.channels.hasOwnProperty(c)) {
-		ret[show.channels[c].name] = show.narration[show.channels[c].id].reset
-		show.narration[show.channels[c].id].live = (live && live[show.channels[c].name]) ? live[show.channels[c].name] : 0;
-		// Update reset state: if there are new elements, isnew is false
-		// If the timeline is still blank, isnew is true. So we just copy isnew to reset
-		//show.narration[show.channels[c].id].reset = false
-		utils.update(users, req).then(function(data) {
-			if (data.Error) res.send(data);
-			else res.send(ret);
-		});
+		if (show.narration[show.channels[c].id] != undefined) {
+			ret[show.channels[c].name] = show.narration[show.channels[c].id].reset
+			show.narration[show.channels[c].id].live = (live && live[show.channels[c].name]) ? live[show.channels[c].name] : 0;
+			// Update reset state: if there are new elements, isnew is false
+			// If the timeline is still blank, isnew is true. So we just copy isnew to reset
+			//show.narration[show.channels[c].id].reset = false
+			utils.update(users, req).then(function(data) {
+				if (data.Error) res.send(data);
+				else res.send(ret);
+			});
+		}
+		else {
+			res.send(utils.error(108));			
+		}
 	}
 })
 

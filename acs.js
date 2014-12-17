@@ -835,15 +835,13 @@ app.post('/SyncState/:checkSession', function(req, res, next) {
 			// Update reset state: if there are new elements, isnew is false
 			// If the timeline is still blank, isnew is true. So we just copy isnew to reset
 			//show.narration[show.channels[c].id].reset = false
-			utils.update(users, req).then(function(data) {
-				if (data.Error) res.send(data);
-				else res.send(ret);
-			});
-		}
-		else {
-			res.send(utils.error(108));			
+
 		}
 	}
+	utils.update(users, req).then(function(data) {
+		if (data.Error) res.send(data);
+		else res.send(ret);
+	});	
 })
 
 /* 

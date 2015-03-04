@@ -695,6 +695,65 @@ app.post('/StoreFile/:checkSession', function(req, res, next) {
 })
 
 /* 
+  	StoreFile
+	---------
+    Stores a File with a multi part file form and accepts the keyword
+    data as json string
+
+	<form>
+		<input type="hidden" id="meta" name="meta" value="jsondata">
+ 		<input type="file" id="url" name="url">
+	</form>
+  
+*/
+
+app.post('/StoreFileAnnotaded/:checkSession', function(req, res, next) {
+	if (req.current.options.show == null) {
+		res.send(utils.error(103));
+		return;
+	}
+	if (req.current.shows[req.current.options.show].clips == null)
+		req.current.shows[req.current.options.show].contents = [];
+
+	// Process 
+	utils.processfileupload(req, res, db, users).then(function(data) {
+		if (!config.quiet) console.log("Files processed.");
+//		if (!config.quiet) console.log(util.inspect(data, false,null))					
+		if (data.Error) {
+			if (!config.quiet) console.log("Error Uploading:" + data.Error);
+			res.send(data);
+			return;
+		} else {
+			// Add File to ontology
+			utils.addontologymulti(
+					data.element,
+					data.fields, 
+					req.current.shows[req.current.options.show].contents[req.current.options.content]
+				);
+
+			// Store Data
+			utils.update(users, req).then(function(store) {
+				if (store.Error) {
+					res.send(store);
+					return;
+				}
+				else {
+					res.send(true);
+					
+					// Sync Contents
+					utils.synchronize(users, req, db).then(function(res){
+						if (res===false) {
+							console.log("[sync] Failed!");
+						}
+					});
+				}
+			});
+		}
+	})
+})
+
+
+/* 
   	Preview
 	-------
     Sends a preview file

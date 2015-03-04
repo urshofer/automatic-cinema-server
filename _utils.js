@@ -319,10 +319,13 @@ var fs = require('fs'),
 			
 			var hls_average = function(paths) {
 				var hlsdeferred = q.defer();
+				var _h = [];
 				for (var i = 0, len = paths.length; i < len; i++) {
-					var _h = [];
-					exec(c.convert_path + ' ' + c.upload_dir + "/" + paths[i] + ' -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', function(err, stdout, stderr) {
-						if (err) hlsdeferred.resolve(module.error(114))
+					exec(c.convert_path + ' "' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', function(err, stdout, stderr) {
+						if (err) {
+							console.log(err);
+							hlsdeferred.resolve(module.error(114))
+						}
 						else {
 							_h.push(JSON.parse(stdout.toString()));
 						}
@@ -343,7 +346,7 @@ var fs = require('fs'),
 				}
 				return hlsdeferred.promise;				
 			}
-			var command = ffmpeg();			
+			var command = ffmpeg();		
 			command.input(filepath)
 			  .on('error', function(err) {
 			    if (!c.quiet) console.log(err);
@@ -353,11 +356,28 @@ var fs = require('fs'),
 			  })
 			  .on('end', function() {
 
+	  		    if (!c.quiet) console.log("Filtering filenames");
+				
+				var _thumbs_existing = [];
+				for (var i = 0; i < thumbs.length; i++) {
+					if (fs.existsSync(c.upload_dir + "/" + thumbs[i])) {
+						_thumbs_existing.push(thumbs[i]);
+					}
+				}
+				thumbs =  _thumbs_existing ;
+				
+				if (!c.quiet) console.log(util.inspect(thumbs, false,null))					
+
 				// Average HLS here
 				  hls_average(thumbs).then(function(hls){
-					  if (hls.Error) deferred.resolve(hls);
+					  if (hls.Error) {
+						  if (!c.quiet) console.log("HLS Error");
+						  deferred.resolve(hls);
+					  }
 					  else {
 						  // Stick to animated gif here
+						  if (!c.quiet) console.log("Start to stick .gif");
+						  
 						  ffstick = ffmpeg();			
 						  ffstick
 							  .input(filepath + "_%02d.png")
@@ -397,6 +417,7 @@ var fs = require('fs'),
 			  })
 			  .autoPad()
 			  .takeScreenshots({count: 10, size: c.thumb_size+'x?', filename: path.basename(filepath)+'_%0i.png'}, c.upload_dir)
+		    if (!c.quiet) console.log("Sticker Stop");			  
 			return deferred.promise;
 		}
 
@@ -428,7 +449,9 @@ var fs = require('fs'),
 					deferred.resolve(module.error(110, err.message));
 				} else {
 					files.url.name = module.checkfile(files.url.name, req.current.shows[req.current.options.show].clips);
-					if (!c.quiet) console.log("Checking upload for " + files.url.name)
+					if (!c.quiet) console.log("Checking upload: " + files.url.name)
+					if (!c.quiet) console.log("            tmp: " + files.url.path)						
+					if (!c.quiet) console.log("           mime: " + mime.lookup(files.url.path))												
 					// Text Parsing: Sync Function
 					if (mime.lookup(files.url.path) == 'text/plain') {
 						if (!c.quiet) console.log("TEXT")
@@ -512,6 +535,7 @@ var fs = require('fs'),
 					}
 					// Media Parsing
 					else module.ffprobe(files.url.path).then(function(data) {
+						if (!c.quiet) console.log("FFmpeg probed: " + data)																		
 						// Media File:
 						if (data) {
 							var video = false;
@@ -525,11 +549,13 @@ var fs = require('fs'),
 								deferred.resolve(module.error(108));
 								return;
 							}
-
+							if (!c.quiet) console.log("Type: " + media_type)																		
 							if (video) {
 								module.processvideo(files.url.path, files.url.name, db).then(function(param) {
 									fs.unlinkSync(files.url.path);
 									if (param.Error) {
+										if (!c.quiet) console.log("Video processing error: " + param.Error);	
+										if (!c.quiet) console.log(util.inspect(param.Error, false,null))	
 										deferred.resolve(param);
 										return;
 									} else {
@@ -549,9 +575,16 @@ var fs = require('fs'),
 										}
 										req.current.shows[req.current.options.show].clips.push(newElement)
 										module.update(users, req).then(function(err) {
-											if (err.Error) deferred.resolve(err);
-											else deferred.resolve({element:newElement,fields:fields});											
+											if (err.Error) {
+												if (!c.quiet) console.log("Update Error.")																																								
+												deferred.resolve(err);
+											}
+											else {
+												if (!c.quiet) console.log("Update Done.")
+												deferred.resolve({element:newElement,fields:fields});											
+											}
 										});
+										if (!c.quiet) console.log("Video processing successed")																												
 										return;
 									}
 								})
@@ -589,6 +622,7 @@ var fs = require('fs'),
 						}
 						// FFMPEG Error: Could not Work on Data...
 						else {
+							if (!c.quiet) console.log("FFmpeg error.")												
 							fs.unlinkSync(files.url.path);
 							res.send(module.error(111));
 						}
@@ -623,7 +657,21 @@ var fs = require('fs'),
 		    }						
 			return other_dims;
 		}
-		
+
+		// Add an Element into the active ontology data
+		module.addontologymulti = function(element,data,json) {
+			var _new_coords = JSON.parse(data.meta);
+			for (var dim in _new_coords) {					
+		        if (_new_coords.hasOwnProperty(dim)) {
+					if (!c.quiet) console.log("Adding Dimension " + dim);					
+					if (json.data[dim].Objects==null) json.data[dim].Objects = []
+					for (var i = 0, len = _new_coords[dim].length; i < len; i++) {						
+						json.data[dim].Objects.push([element.name,_new_coords[dim][i],element.thumb,true])						
+					}
+				}
+		    }
+		}
+				
 		module.annotate = function(data, dim, x, y, name, prev) {
 			var upd = false;
 		    for (var o in data[dim].Objects) if (data[dim].Objects.hasOwnProperty(o)) {

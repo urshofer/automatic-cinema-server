@@ -74,7 +74,7 @@ var fs = require('fs'),
 		  }
 		});
 		
-		console.log("- utilities ready                                   -")
+		console.log(c.html?"<p>Utilities ready</p>":"- utilities ready                                   -")
 
 		
 		module.guid = (function() {
@@ -280,7 +280,8 @@ var fs = require('fs'),
 
 					// HLS Analysis
 
-					else exec(c.convert_path + ' ' + filepath + ' -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', function(err, stdout, stderr) {
+					else exec('"' + c.convert_path + '" "' + filepath + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
+						function(err, stdout, stderr) {
 						if (err) deferred.resolve(module.error(114))
 						else {
 							var hls = JSON.parse(stdout.toString())
@@ -321,7 +322,14 @@ var fs = require('fs'),
 				var hlsdeferred = q.defer();
 				var _h = [];
 				for (var i = 0, len = paths.length; i < len; i++) {
-					exec(c.convert_path + ' "' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', function(err, stdout, stderr) {
+					
+					  if (!c.quiet) console.log("Execute convert: " + '"' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:');
+					
+					
+					exec('"' + c.convert_path + '" "' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
+					function(err, stdout, stderr) {
+						if (!c.quiet) console.log("Convert error..." + stderr.toString());
+						if (!c.quiet) console.log("Convert success: " + stdout.toString());
 						if (err) {
 							console.log(err);
 							hlsdeferred.resolve(module.error(114))
@@ -370,13 +378,15 @@ var fs = require('fs'),
 
 				// Average HLS here
 				  hls_average(thumbs).then(function(hls){
+
+					  if (!c.quiet) console.log("Start to stick .gif");
+
 					  if (hls.Error) {
 						  if (!c.quiet) console.log("HLS Error");
 						  deferred.resolve(hls);
 					  }
 					  else {
 						  // Stick to animated gif here
-						  if (!c.quiet) console.log("Start to stick .gif");
 						  
 						  ffstick = ffmpeg();			
 						  ffstick
@@ -386,9 +396,15 @@ var fs = require('fs'),
 							  .inputFPS(2)
 							  .output(thumbname)
 							  .on('error', function(err, stdout, stderr) {
+
+							         console.log("stdout:\n" + stdout);
+							         console.log("stderr:\n" + stderr); //this will contain more detailed debugging info
+
+								  if (!c.quiet) console.log(util.inspect(err, false,null))		
 								  deferred.resolve(module.error(112))
 							  })
 							  .on('end', function() {
+					  		    if (!c.quiet) console.log("Sticker Stop");			  
 	  							module.storefile(db, filepath).then(function(data) {
 	  								// Create Thumbs
 	  								if (data)
@@ -396,6 +412,7 @@ var fs = require('fs'),
 	  									module.storefile(db, thumbname).then(function(datat) {
 	  										if (datat) {
 	  											fs.unlinkSync(thumbname);
+									  		    if (!c.quiet) console.log("Sticker Stored");			  
 												for (var i = 0, len = thumbs.length; i < len; i++) fs.unlinkSync(c.upload_dir + "/" + thumbs[i]);
 	  											deferred.resolve({
 	  												thumb: datat,
@@ -417,7 +434,6 @@ var fs = require('fs'),
 			  })
 			  .autoPad()
 			  .takeScreenshots({count: 10, size: c.thumb_size+'x?', filename: path.basename(filepath)+'_%0i.png'}, c.upload_dir)
-		    if (!c.quiet) console.log("Sticker Stop");			  
 			return deferred.promise;
 		}
 

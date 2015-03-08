@@ -40,7 +40,7 @@ var q = require("q"),
 module.exports = function(c,utils) {
 	var module = {};
 	var time = 0;
-	console.log("- narration ready                                   -")
+	console.log(c.html?"<p>Narration Ready</p>":"- narration ready                                   -")
 
 	
 	module.reset = function(req, users, channel_id_only, force){
@@ -724,7 +724,7 @@ module.exports = function(c,utils) {
 						reset					: narration.reset && narration.isnew,						
 					},
 					in							: parseFloat(narration.time),
-					out							: parseFloat(narration.time)+parseFloat(clip.parameter.duration)-config.preroll
+					out							: parseFloat(narration.time)+parseFloat(clip.parameter.duration)-c.preroll
 				}
 
 
@@ -754,7 +754,7 @@ module.exports = function(c,utils) {
 						element_id				: clipid,
 						element_in				: parseFloat(narration.time),
 						element_name			: clip.name,
-						element_duration		: parseFloat(clip.parameter.duration)-config.preroll,
+						element_duration		: parseFloat(clip.parameter.duration)-c.preroll,
 						element_parameters  	: clip.parameter,
 						element_score_physical 	: match.physical.__norm,
 						element_score_tension 	: match.content.__norm,
@@ -769,14 +769,14 @@ module.exports = function(c,utils) {
 				narration.isnew 	= false;
 				narration.reset 	= false;
 				narration.cursor 	= match.content.cursor
-				narration.time   	+= parseFloat(clip.parameter.duration)-config.preroll;		
+				narration.time   	+= parseFloat(clip.parameter.duration)-c.preroll;		
 			}
 			// No Element found with a score higher than minimal score
 			// Creating fake cursor, advancing time
 			else {
 				narration.tension_required = false;
 				narration.cursor	= narration.tonode ? narration.tonode.topos : [0,0];
-				narration.time   	+= config.emptygap;
+				narration.time   	+= c.emptygap;
 			}
 
 		 

@@ -30,9 +30,58 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 */
 
-console.log("-----------------------------------------------------")
-console.log("- Automatic Cinema Server                           -")
-console.log("-                                                   -")
+var config = require('./_config.js');
+
+if (config.html) console.log("<html>\
+<head>\
+<style>\
+body {\
+display: block;\
+position: absolute;\
+left: 0;\
+right: 0;\
+top: 220px;\
+bottom: 0;\
+overflow: none;\
+overflow-y: scroll;\
+white-space: pre;\
+font: normal normal normal 1em Courier, \"Courier New\", monospace;\
+}\
+div {\
+z-index: 1;\
+white-space: normal;\
+position: fixed;\
+right: 0;\
+top: 0;\
+left: 0;\
+height: 190px;\
+font: normal normal normal 1em Arial, sans-serif;\
+padding: 1em;\
+padding-bottom: 0.5em;\
+background: rgba(130,130,130,0.8);\
+}\
+.blur {\
+z-index: 0;\
+filter: blur(10px);\
+-webkit-filter: blur(10px);\
+-moz-filter: blur(10px);\
+}\
+h1 {\
+	font-size: 1.2em;\
+}\
+hr {\
+	height: 0;\
+	border-bottom: 1px solid #000;\
+}\
+</style>\
+</head>\
+<body>\
+<div>")
+console.log(config.html?"<hr>":"-----------------------------------------------------")
+console.log(config.html?"<h1>Automatic Cinema Server</h1>":"- Automatic Cinema Server                           -")
+console.log(config.html?"<hr>":"-                                                   -")
+
+
 
 /* Load Library */
 
@@ -44,7 +93,6 @@ var express = require('express'),
 	util = require('util'),
 	ip = require("ip"),
 	app = express(),
-	config = require('./_config.js'),
 	utils = require('./_utils.js')(config),
 	narration = require('./_narration.js')(config, utils),	
 	utils.narration = narration,
@@ -1014,8 +1062,8 @@ app.get('/', function(req, res, next) {
 	res.sendFile(path.join(config.html_dir, 'index.html'));
 })
 
-console.log("- Server running on                                 -")
-console.log("- \033[31m" + "http://" + ip.address() + ":" + config.port + "\033[0m                           -")		
-console.log("-----------------------------------------------------")
-
+console.log(config.html?"<p>Server running on</p>":"- Server running on                                 -")
+console.log(config.html?"<p class='address'><a target='_blank' href='http://" + ip.address() + ":" + config.port + "'>http://" + ip.address() + ":" + config.port + "</a></p>":"- \033[31m" + "http://" + ip.address() + ":" + config.port + "\033[0m                           -")		
+console.log(config.html?"<hr>":"-----------------------------------------------------")
+if (config.html) console.log("</div><div class='blur'></div>");
 app.listen(config.port)

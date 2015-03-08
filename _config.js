@@ -16,9 +16,9 @@ module.exports = {
 
 		*/
 	
-		ffmpeg_path: 		__dirname + '/ffmpeg/osx/ffmpeg',
-		ffprobe_path: 		__dirname + '/ffmpeg/osx/ffprobe',
-		convert_path: 		"/usr/local/bin/convert",
+		ffmpeg_path: 		__dirname + '/bin/osx/ffmpeg/bin/ffmpeg',
+		ffprobe_path: 		__dirname + '/bin/osx/ffmpeg/bin/ffprobe',
+		convert_path: 		'/opt/ImageMagick/bin/convert',
 		mongo: 				'mongodb://localhost:27017/automaticcinema',		
 		port: 				3000,
 		
@@ -28,6 +28,7 @@ module.exports = {
 		*/
 		
 		quiet: 				true, 
+		html: 				true, 
 		
 		/* 
 		Extended Parameters: Normally, parameters below here don't need to be changed 
@@ -47,6 +48,6 @@ module.exports = {
 		thumb_size: 		100,
 		channel_types: 		["Video","Bild","Musik","Sprache","Text"],
 		fps: 				25,
-		preroll: 			250,
+		preroll: 			100,
 		emptygap: 			2000
 }

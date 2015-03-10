@@ -28,6 +28,7 @@ node_modules
 .lock-wscript
 
 # FFMPEG and Node
+bin
 ffmpeg
 mongo
 tmp

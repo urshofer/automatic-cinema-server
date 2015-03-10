@@ -160,7 +160,8 @@ app.param(':checkSession', function(req, res, next, checkSession) {
 					target: null,
 					content: null,
 					time: 0,
-					projects: config.version
+					projects: config.version,
+					preroll: config.preroll
 				}
 				utils.update(users, req).then(function(data) {
 					if (data.Error) res.send(data);
@@ -196,7 +197,8 @@ app.post('/Login', function(req, res, next) {
 					target: null,
 					content: null,
 					time: 0,
-					projects: config.version
+					projects: config.version,
+					preroll: config.preroll					
 				}
 			}, {}, function(e, results) {
 				if (e) {
@@ -333,7 +335,13 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 			}
 
 		case 'time':
+			console.log("Updated Time:" + req.body.time)			
 			req.current.options.time = parseInt(req.body.time);
+			break;
+
+		case 'preroll':
+			console.log("Updated Preroll: " + req.body.preroll)			
+			req.current.options.preroll = parseInt(req.body.preroll);
 			break;
 
 		case 'content':
@@ -386,6 +394,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 			if (req.body.target != null) req.current.options.target = req.body.target
 			if (req.body.content != null) req.current.options.content = req.body.content
 			if (req.body.time != null) req.current.options.time = req.body.time
+			if (req.body.preroll != null) req.current.options.preroll = req.body.preroll
 			console.log("Updated Config")
 			break;
 		default:
@@ -1020,8 +1029,8 @@ app.get('/HasMaster/:checkSession/:channel', function(req, res, next) {
   
 */
 app.get('/Preroll/:checkSession', function(req, res, next) {
-	console.log("[preroll] get rate " + config.preroll)
-	res.send(config.preroll.toString());
+	console.log("[preroll] get preroll value " + req.current.options.preroll)
+	res.send(req.current.options.preroll.toString());
 })
 
 /* 

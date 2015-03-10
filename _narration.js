@@ -724,7 +724,7 @@ module.exports = function(c,utils) {
 						reset					: narration.reset && narration.isnew,						
 					},
 					in							: parseFloat(narration.time),
-					out							: parseFloat(narration.time)+parseFloat(clip.parameter.duration)-c.preroll
+					out							: parseFloat(narration.time)+parseFloat(clip.parameter.duration)-req.current.options.preroll
 				}
 
 
@@ -754,7 +754,7 @@ module.exports = function(c,utils) {
 						element_id				: clipid,
 						element_in				: parseFloat(narration.time),
 						element_name			: clip.name,
-						element_duration		: parseFloat(clip.parameter.duration)-c.preroll,
+						element_duration		: parseFloat(clip.parameter.duration)-req.current.options.preroll,
 						element_parameters  	: clip.parameter,
 						element_score_physical 	: match.physical.__norm,
 						element_score_tension 	: match.content.__norm,
@@ -769,7 +769,7 @@ module.exports = function(c,utils) {
 				narration.isnew 	= false;
 				narration.reset 	= false;
 				narration.cursor 	= match.content.cursor
-				narration.time   	+= parseFloat(clip.parameter.duration)-c.preroll;		
+				narration.time   	+= parseFloat(clip.parameter.duration)-req.current.options.preroll;		
 			}
 			// No Element found with a score higher than minimal score
 			// Creating fake cursor, advancing time

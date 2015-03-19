@@ -698,6 +698,9 @@ module.exports = function(c,utils) {
 				ret = {},
 				clip = {};
 			
+			if (clipid == undefined || match == undefined || match.content == undefined) {
+				return;
+			}
 			
 			for (var _c in clips) if (clips.hasOwnProperty(_c) && clips[_c].id==clipid) {
 				clip = clips[_c];

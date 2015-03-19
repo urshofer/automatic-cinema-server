@@ -472,7 +472,7 @@ module.exports = function(c,utils) {
 		for (var i = 0, len = clips.length; i < len; i++) {
 			// Find all Coordinates of a clip within this dimension
 
-			if (narration.usage.clips[narration.current]==null) {
+			if (narration.usage.clips[narration.current] == null || narration.usage.clips[narration.current][clips[i].id] == undefined || narration.usage.clips[narration.current][clips[i].id] == null) {
 //				console.log(narration.current)
 //				console.log(clips[i].id)				
 //				console.log(narration.usage)								

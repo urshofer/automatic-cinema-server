@@ -944,6 +944,8 @@ app.post('/SyncState/:checkSession', function(req, res, next) {
 	var live = JSON.parse(req.body.data)[0];
 	ret = {}
 	var show = req.current.shows[req.current.options.show];
+	if (show.channels == undefined) 
+		res.send(utils.error(108));
     for (var c in show.channels) if (show.channels.hasOwnProperty(c)) {
 		if (show.narration[show.channels[c].id] != undefined) {
 			ret[show.channels[c].name] = show.narration[show.channels[c].id].reset

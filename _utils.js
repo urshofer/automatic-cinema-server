@@ -38,7 +38,11 @@ var fs = require('fs'),
 	gm = require('gm'),
 	formidable = require('formidable'),
 	mime = require('mime'),
-	exec = require('child_process').exec
+	exec = require('child_process').exec,
+	bpmSink = require('bpm.js'),
+	spawn = require('child_process').spawn,
+	md5 = require('MD5'),
+	wrap = require('wordwrap')(0,20,{mode:"hard"});
 
 	Array.prototype.sum = function () {
 	    var total = 0;
@@ -260,6 +264,38 @@ var fs = require('fs'),
 			return false;
 		}
 
+
+		module.createthumbfromstring = function(db, string) {
+			var deferred = q.defer();
+			var thumb = c.upload_dir + "/" + md5(string) + ".png";
+			if (!c.quiet) console.log("Create Thumb with string:" + thumb)
+
+			gm(c.thumb_size*4,c.thumb_size*4, "#ccccccaa")
+				.options({
+					imageMagick: true
+				})
+				.fontSize(40)
+				.drawText(12, 50, wrap(string).substring(0,100).split("\n").slice(0,8).join("\n"))
+				.resize(c.thumb_size)
+				.write(thumb, function(err) {
+					if (err) {
+						if (!c.quiet) console.log(err)
+						deferred.resolve(module.error(112))
+					}
+					else {
+						if (!c.quiet) console.log("Store Thumb")
+						module.storefile(db, thumb).then(function(filename) {
+							if (!c.quiet) console.log("Delete Thumb")
+							fs.unlinkSync(thumb);
+							if (filename) deferred.resolve(filename);						
+							else deferred.resolve(module.error(113))
+						})
+					}
+				})
+			return deferred.promise;
+		}
+
+
 		// Create Thumbnail, store file and thumbnail in griddb
 		// Delete Thumbnail
 
@@ -310,6 +346,52 @@ var fs = require('fs'),
 			return deferred.promise;
 		}
 
+		// Measure BPM, store file and thumbnail in griddb
+		module.processaudio = function(filepath, filename, db) {
+			var deferred = q.defer();
+			
+			/* Create Audio Conversion */
+		    var args = [
+		  	  "-i",
+		  	  filepath,
+		  	  "-ac",
+		  	  "1",
+		  	  "-f",
+		  	  "f32le",
+		  	  "-ar",
+		  	  "44100",
+		  	  "-acodec",
+		  	  "pcm_f32le",
+		  	  "-"
+		    ]
+		    var sox = spawn(c.ffmpeg_path, args)
+		    sox.stdout.pipe(bpmSink()).on("bpm", function(bpm){
+	  		    if (!c.quiet) console.log("bpm is %d", bpm)
+				module.createthumbfromstring(db, filename + "\nBPM: " + Math.round(bpm,2)).then(function(thumb) {
+					if (thumb.Error) {
+						if (!c.quiet) console.log("Create Thumbnail Error")																																								
+						deferred.resolve(thumb);
+					}
+					else {
+						module.storefile(db, filepath).then(function(filename) {
+							if (filename) {
+					  		    if (!c.quiet) console.log("Audio Stored");			  
+								deferred.resolve({
+									file: filename,
+									thumb: thumb,
+									bpm: bpm
+								})
+							}
+							// Grid fs store error						
+							else deferred.resolve(module.error(113))
+						});
+					}
+				})
+			});
+			return deferred.promise;
+		}
+
+
 		// Create Animated gif, store file and thumbnail in griddb
 		// Delete Thumbnail
 		
@@ -323,7 +405,7 @@ var fs = require('fs'),
 				var _h = [];
 				for (var i = 0, len = paths.length; i < len; i++) {
 					
-					  if (!c.quiet) console.log("Execute convert: " + '"' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:');
+					if (!c.quiet) console.log("Execute convert: " + '"' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:');
 					
 					
 					exec('"' + c.convert_path + '" "' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
@@ -396,11 +478,11 @@ var fs = require('fs'),
 							  .inputFPS(2)
 							  .output(thumbname)
 							  .on('error', function(err, stdout, stderr) {
-
-							         console.log("stdout:\n" + stdout);
-							         console.log("stderr:\n" + stderr); //this will contain more detailed debugging info
-
-								  if (!c.quiet) console.log(util.inspect(err, false,null))		
+								  if (!c.quiet) {
+									  console.log("stdout:\n" + stdout);
+									  console.log("stderr:\n" + stderr); //this will contain more detailed debugging info
+									  console.log(util.inspect(err, false,null))		
+								  }
 								  deferred.resolve(module.error(112))
 							  })
 							  .on('end', function() {
@@ -480,31 +562,40 @@ var fs = require('fs'),
 							deferred.resolve(module.error(108));
 							return;
 						}
-						module.storefile(db, files.url.path).then(function(data) {
-							fs.unlinkSync(files.url.path);
-							if (data) {
-								var newElement = {
-									name: files.url.name,
-									file: data,
-									thumb: files.url.name,
-									parameter: {
-										duration: lines.length * c.textline_duration
-									},
-									channel: channel_id,
-									hash: files.url.hash,
-									media: media_type
-								}
-								req.current.shows[req.current.options.show].clips.push(newElement)
-								module.update(users, req).then(function(data) {
-									if (data.Error) deferred.resolve(data);
-									else deferred.resolve({element:newElement,fields:fields});
-								});
-
-							}
-							// Grid fs store error						
+						module.createthumbfromstring(db, content).then(function(thumb) {
+							if (thumb.Error) {
+								if (!c.quiet) console.log("Create Thumbnail Error")																																								
+								fs.unlinkSync(files.url.path);
+								deferred.resolve(thumb);
+							}						
 							else {
-								deferred.resolve(module.error(113));
-								return;
+								module.storefile(db, files.url.path).then(function(data) {
+									fs.unlinkSync(files.url.path);
+									if (data) {
+										var newElement = {
+											name: files.url.name,
+											file: data,
+											thumb: thumb,
+											parameter: {
+												duration: lines.length * c.textline_duration
+											},
+											channel: channel_id,
+											hash: files.url.hash,
+											media: media_type
+										}
+										req.current.shows[req.current.options.show].clips.push(newElement)
+										module.update(users, req).then(function(data) {
+											if (data.Error) deferred.resolve(data);
+											else deferred.resolve({element:newElement,fields:fields});
+										});
+
+									}
+									// Grid fs store error						
+									else {
+										deferred.resolve(module.error(113));
+										return;
+									}
+								});
 							}
 						});
 					}
@@ -608,15 +699,24 @@ var fs = require('fs'),
 
 							// Store Audio
 							else {
-								module.storefile(db, files.url.path).then(function(filename) {
+								module.processaudio(files.url.path, files.url.name, db).then(function(param) {
 									fs.unlinkSync(files.url.path);
-									if (filename) {
+									if (param.Error) {
+										if (!c.quiet) {
+											console.log("Audio processing error: " + param.Error);	
+											console.log(util.inspect(param.Error, false,null))	
+										}
+										deferred.resolve(param);
+										return;
+									} 
+									else {									
 										var newElement = {
 											name: files.url.name,
-											thumb: files.url.name,
-											file: filename,
+											thumb: param.thumb,
+											file: param.filename,
 											parameter: {
-												duration: data.format.duration * 1000
+												duration: data.format.duration * 1000,
+												bpm: param.bpm		// Returned by processaudio
 											},
 											channel: channel_id,
 											hash: files.url.hash,
@@ -627,13 +727,8 @@ var fs = require('fs'),
 											if (err.Error) deferred.resolve(err);
 											else deferred.resolve({element:newElement,fields:fields});											
 										});
-
 									}
-									// Grid fs store error						
-									else {
-										deferred.resolve(module.error(113));
-									}
-								});
+								});									
 							}
 						}
 						// FFMPEG Error: Could not Work on Data...

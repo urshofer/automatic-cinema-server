@@ -646,10 +646,12 @@ module.exports = function(c,utils) {
 						if (style[s].type==2 && style[s].key=="Logic") 
 							log = [style[s].ipl[0],style[s].ipl[1]]
 					}
-					narration.dimensions[t].importance 	= ret[0]
-					narration.dimensions[t].tension		= ret[1]
-					narration.dimensions[t].logic		= log[0]
-					narration.dimensions[t].jumpcut		= log[1]
+					if (narration.dimensions[t] != undefined) {
+						narration.dimensions[t].importance 	= ret[0]
+						narration.dimensions[t].tension		= ret[1]
+						narration.dimensions[t].logic		= log[0]
+						narration.dimensions[t].jumpcut		= log[1]
+					}
 				}
 
 			}

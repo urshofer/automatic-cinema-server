@@ -164,6 +164,7 @@ module.exports = function(c,utils) {
 	// Returns the distance between two coordinates
 	// Coordinates are passed as arrays [x,y]
 	module._distance = function(coord1,coord2) {
+		if (coord1==undefined || coord2==undefined) return 0;
 		return (Math.sqrt(Math.pow(Math.abs(parseFloat(coord1[0])-parseFloat(coord2[0])),2)+Math.pow(Math.abs(parseFloat(coord1[1])-parseFloat(coord2[1])),2)));					
 	}	
 	

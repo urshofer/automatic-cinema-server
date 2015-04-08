@@ -26,7 +26,7 @@ module.exports = {
 		Set to true for more verbosity on the command line 
 		*/
 		
-		quiet: 				false, 
+		quiet: 				true, 
 		html: 				true, 
 		
 		/* 

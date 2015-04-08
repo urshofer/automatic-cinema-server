@@ -16,9 +16,8 @@ module.exports = {
 
 		*/
 	
-		ffmpeg_path: 		__dirname + '/bin/osx/ffmpeg/bin/ffmpeg',
-		ffprobe_path: 		__dirname + '/bin/osx/ffmpeg/bin/ffprobe',
-		convert_path: 		'/opt/ImageMagick/bin/convert',
+		ffmpeg_path: 		__dirname + '/bin/osx/ffmpeg/bin/',
+		convert_path: 		'/opt/ImageMagick/bin/',
 		mongo: 				'mongodb://localhost:27017/automaticcinema',		
 		port: 				3000,
 		
@@ -27,7 +26,7 @@ module.exports = {
 		Set to true for more verbosity on the command line 
 		*/
 		
-		quiet: 				true, 
+		quiet: 				false, 
 		html: 				true, 
 		
 		/* 

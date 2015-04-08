@@ -29,7 +29,8 @@
 	"ip": "0.3.2",
 	"bpm.js": "1.0.3",
 	"MD5": "1.2.1",
-	"wordwrap": "0.0.2"
+	"wordwrap": "0.0.2",
+	"pureimage": "0.0.11"
   },
   "devDependencies": {
     "expect.js": "0.3.1",

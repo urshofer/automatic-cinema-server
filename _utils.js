@@ -42,7 +42,8 @@ var fs = require('fs'),
 	bpmSink = require('bpm.js'),
 	spawn = require('child_process').spawn,
 	md5 = require('MD5'),
-	wrap = require('wordwrap')(0,20,{mode:"hard"});
+	PImage = require('pureimage'),
+	wrap = require('wordwrap')(0,15,{mode:"hard"});
 
 	Array.prototype.sum = function () {
 	    var total = 0;
@@ -67,8 +68,8 @@ var fs = require('fs'),
 
 	module.exports = function(c) {
 		var module = {};
-		ffmpeg.setFfmpegPath(c.ffmpeg_path)
-		ffmpeg.setFfprobePath(c.ffprobe_path)
+		ffmpeg.setFfmpegPath(c.ffmpeg_path + "ffmpeg")
+		ffmpeg.setFfprobePath(c.ffmpeg_path + "ffprobe")
 		
 		// Check temporary dir:
 		fs.exists(c.upload_dir, function (exists) {
@@ -269,15 +270,20 @@ var fs = require('fs'),
 			var deferred = q.defer();
 			var thumb = c.upload_dir + "/" + md5(string) + ".png";
 			if (!c.quiet) console.log("Create Thumb with string:" + thumb)
+			var img1 = PImage.make(c.thumb_size,c.thumb_size);
+			var fnt = PImage.registerFont('_silkscreen.ttf','silk');
+			fnt.load(function() {
+				var ctx = img1.getContext('2d');
+			    ctx.fillStyle = "#333333";
+			    ctx.fillRect(0,0,c.thumb_size,c.thumb_size);
+			    ctx.fillStyle = '#ffffff';
+				ctx.setFont('silk',12);
 
-			gm(c.thumb_size*4,c.thumb_size*4, "#ccccccaa")
-				.options({
-					imageMagick: true
-				})
-				.fontSize(40)
-				.drawText(12, 50, wrap(string).substring(0,100).split("\n").slice(0,8).join("\n"))
-				.resize(c.thumb_size)
-				.write(thumb, function(err) {
+				var lineArray = wrap(string).substring(0,100).split("\n").slice(0,8);
+				for (var i = 0, len = lineArray.length; i < len; i++) {
+					ctx.fillText(lineArray[i], 2, 12 + (9 * i));					
+				}
+				PImage.encodePNG(img1, fs.createWriteStream(thumb), function(err) {
 					if (err) {
 						if (!c.quiet) console.log(err)
 						deferred.resolve(module.error(112))
@@ -291,7 +297,9 @@ var fs = require('fs'),
 							else deferred.resolve(module.error(113))
 						})
 					}
-				})
+				});
+			})
+
 			return deferred.promise;
 		}
 
@@ -316,7 +324,7 @@ var fs = require('fs'),
 
 					// HLS Analysis
 
-					else exec('"' + c.convert_path + '" "' + filepath + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
+					else exec('"' + c.convert_path + 'convert" "' + filepath + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
 						function(err, stdout, stderr) {
 						if (err) deferred.resolve(module.error(114))
 						else {
@@ -364,7 +372,7 @@ var fs = require('fs'),
 		  	  "pcm_f32le",
 		  	  "-"
 		    ]
-		    var sox = spawn(c.ffmpeg_path, args)
+		    var sox = spawn(c.ffmpeg_path + "ffmpeg", args)
 		    sox.stdout.pipe(bpmSink()).on("bpm", function(bpm){
 	  		    if (!c.quiet) console.log("bpm is %d", bpm)
 				module.createthumbfromstring(db, filename + "\nBPM: " + Math.round(bpm,2)).then(function(thumb) {
@@ -408,7 +416,7 @@ var fs = require('fs'),
 					if (!c.quiet) console.log("Execute convert: " + '"' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:');
 					
 					
-					exec('"' + c.convert_path + '" "' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
+					exec('"' + c.convert_path + 'convert" "' + c.upload_dir + "/" + paths[i] + '" -colorspace rgb -scale 1x1 -format "{\\\"h\\\":%[fx:hue],\\\"s\\\":%[fx:saturation],\\\"l\\\":%[fx:lightness]}" info:', 
 					function(err, stdout, stderr) {
 						if (!c.quiet) console.log("Convert error..." + stderr.toString());
 						if (!c.quiet) console.log("Convert success: " + stdout.toString());

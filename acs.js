@@ -275,7 +275,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 			req.body.suffix = req.body.suffix.split(";");
 			req.body.status = "Open";
 			req.body.id = utils.guid();
-			
+			req.body.snap = req.body.snap===true||req.body.snap==='true';			
 			if (req.current.shows[req.current.options.show]) {
 				if (!req.current.shows[req.current.options.show].channels instanceof Array || req.current.shows[req.current.options.show].channels == null)
 					req.current.shows[req.current.options.show].channels = [];
@@ -287,7 +287,22 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 				}
 			}
 			break;
-
+		case 'updatechannel':
+			var c = utils.findchannelbyid(req.body.id, req.current.shows[req.current.options.show].channels);
+			if (c) {
+				console.log(c)
+				console.log(req.body)
+				c.name		= req.body.name;
+				c.suffix	= req.body.suffix;
+				c.typ		= req.body.typ;
+				c.master	= req.body.master;
+				c.snap		= req.body.snap===true||req.body.snap==='true';
+			}
+			else {
+				res.send(utils.error(116));				
+				return;
+			}			
+			break;
 		case 'addstyle':
 		case 'addcontent':
 		case 'addtarget':

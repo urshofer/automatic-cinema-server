@@ -383,7 +383,7 @@ var fs = require('fs'),
 					else {
 						module.storefile(db, filepath).then(function(filename) {
 							if (filename) {
-					  		    if (!c.quiet) console.log("Audio Stored");			  
+					  		    if (!c.quiet) console.log("Audio Stored:"+ filename);			  
 								deferred.resolve({
 									file: filename,
 									thumb: thumb,
@@ -721,7 +721,7 @@ var fs = require('fs'),
 										var newElement = {
 											name: files.url.name,
 											thumb: param.thumb,
-											file: param.filename,
+											file: param.file,
 											parameter: {
 												duration: data.format.duration * 1000,
 												bpm: param.bpm		// Returned by processaudio

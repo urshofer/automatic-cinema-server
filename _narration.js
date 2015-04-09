@@ -75,6 +75,7 @@ module.exports = function(c,utils) {
 				show.narration[show.channels[i].id] = {
 					name: 		show.channels[i].name,
 					time: 		0,
+					master_narrations: [],
 					reset: 		force,
 					tension: 	0,
 					tension_required: false,
@@ -406,62 +407,53 @@ module.exports = function(c,utils) {
 				importance = style[s].ipl[0]
 				
 				
-		// Slave Channels: Sync Narration Settings with Master channel if there is one
-		if (narration.hasmaster) {
-			narration.cursor  = narration.master_narration.cursor
-			narration.tonode  = narration.master_narration.tonode
-			narration.context = narration.master_narration.context
-			narration.master  = narration.master_narration.master
-			narration.current = narration.master_narration.current
-		}				
-		else {		
-			// Switch Keyword & Dimension
-			// if tension over threshold ore threshold is not set
-			if (narration.tension>narration.tension_required || narration.tension_required===false) {
-				// Set current dimension, adjust cursor if required
-				var switched = module._choosedimension(narration, content)
+		// Switch Keyword & Dimension
+		// if tension over threshold ore threshold is not set
+		if (narration.tension>narration.tension_required || narration.tension_required===false) {
+			// Set current dimension, adjust cursor if required
+			var switched = module._choosedimension(narration, content)
 //				if (switched) console.log("[narration] switched dimension: " + narration.current)
-				// Choose context around active dimension and cursor
-				narration.context = module._contentanalysis(narration, content)
+			// Choose context around active dimension and cursor
+			narration.context = module._contentanalysis(narration, content)
 
-				//console.log(narration.context)
+			//console.log(narration.context)
 
-				// Choose Node outgoing from this context to another context
-				var mindist = false;
-				var nodechoosen = false;
-				for (var n in narration.context.nodes) if (narration.context.nodes.hasOwnProperty(n)) {
-					var nd = narration.context.nodes[n]
-					// Prefer less use count over more
-					var u = narration.usage.nodes[nd.dim][nd.ref]||0
-					// Prefer short over long
-					var d = nd.distance * (u+1)
-					if (d < mindist || mindist === false) {
-						mindist = d;
-						nodechoosen = n
-					}
+			// Choose Node outgoing from this context to another context
+			var mindist = false;
+			var nodechoosen = false;
+			for (var n in narration.context.nodes) if (narration.context.nodes.hasOwnProperty(n)) {
+				var nd = narration.context.nodes[n]
+				// Prefer less use count over more
+				var u = narration.usage.nodes[nd.dim][nd.ref]||0
+				// Prefer short over long
+				var d = nd.distance * (u+1)
+				if (d < mindist || mindist === false) {
+					mindist = d;
+					nodechoosen = n
 				}
-				// Store new node && update node usage count
-				narration.tonode = nodechoosen===false ? false : narration.context.nodes[nodechoosen];
-				if (narration.tonode != false) {
-					narration.usage.nodes[nd.dim][nd.ref]++
-					// Now we can find out the narration.tension_required
-					narration.tension_required = narration.tonode.distance * narration.dimensions[narration.current].tension;
-					// Update cursor if color of node is red
-					// Setting cursor to node end instead of beginning
-					// for red (negative) nodes. Only applied it tension is over tension_required
-					if (narration.tonode.color=="red" && 
-						narration.tension>narration.tension_required && 
-						switched === false) 
-						narration.cursor = narration.tonode.topos
-	//				console.log("[narration] switched to keyword " + narration.tonode.to)
-				}
-				// Always set tension to 0
+			}
+			// Store new node && update node usage count
+			narration.tonode = nodechoosen===false ? false : narration.context.nodes[nodechoosen];
+			if (narration.tonode != false) {
+				narration.usage.nodes[nd.dim][nd.ref]++
+				// Now we can find out the narration.tension_required
+				narration.tension_required = narration.tonode.distance * narration.dimensions[narration.current].tension;
+				// Update cursor if color of node is red
+				// Setting cursor to node end instead of beginning
+				// for red (negative) nodes. Only applied it tension is over tension_required
+				if (narration.tonode.color=="red" && 
+					narration.tension>narration.tension_required && 
+					switched === false) 
+					narration.cursor = narration.tonode.topos
+//				console.log("[narration] switched to keyword " + narration.tonode.to)
+			}
+			// Always set tension to 0
 //				console.log("[narration] switched to keyword " + narration.tonode.to || "empty")
 //				console.log("[narration] To Pos " + narration.tonode.topos || "empty")			
 //				console.log("[narration] Cursor " + narration.cursor || "empty")						
-				narration.tension = 0;
-			}
+			narration.tension = 0;
 		}
+
 		
 		// Choose best Element: 
 		// Next to Current Cursor is associative top
@@ -598,30 +590,43 @@ module.exports = function(c,utils) {
 			if (show.narration==null) module.reset(req, null, channel.id);
 			var narration = show.narration[channel.id]
 
+			// Resolve Master Channel
 			narration.hasmaster = utils.findchannelbyname(channel.master,show.channels);
-			narration.snap = narration.hasmaster && (channel.snap===true||channel.snap==='true')
+			narration.snap = channel.snap===true||channel.snap==='true';
 
 
 			// Slave Channels: Sync Narration Settings with Master channel if there is one
 			if (narration.hasmaster) {
-				narration.master_narration = util._extend({},show.narration[narration.hasmaster.id]);
-//				console.log("channel " + channel.name + " is slave")
-//				console.log("Master Time: " + narration.master_narration.time + " Slave Time " + narration.time)
-				if (narration.master_narration.time >= narration.time) 
-					narration.time = narration.snap ? narration.master_narration.time : narration.time
-				else {
-//					console.log("Force Exit")
-					deferred.resolve(false);
-					return;
-				}
-		
+				// Load the closest master Narration and copy it into master_narration
+				var _mintime = -1;
+				if (narration.master_narrations != undefined) {
+					for (var _m in narration.master_narrations) if ( narration.master_narrations.hasOwnProperty(_m)) {					
+						if (narration.master_narrations[_m] != null) {
+							if (narration.master_narrations[_m].master_time > _mintime &&
+								(narration.snap || narration.master_narrations[_m].master_time <= narration.time)
+							) {
+								_mintime = narration.master_narrations[_m].master_time;
+								if (!c.quiet) console.log("[narration] "+channel.name+" is pulling master at "+_mintime)																		
+								narration.cursor  = narration.master_narrations[_m].cursor
+								narration.tonode  = narration.master_narrations[_m].tonode
+								narration.context = narration.master_narrations[_m].context
+								narration.master  = narration.master_narrations[_m].master
+								narration.current = narration.master_narrations[_m].current
+								// Keep Time or Sync it with Master Time if snap == true
+								if (narration.snap) narration.time = _mintime;
+								narration.master_narrations[_m] = null;
+							}
+						}
+					}
+					narration.master_narrations.clean(null);
+				}				
 			}
 			// Master Channel: Reset time if over the limit
 			else {
 //				console.log("channel " + channel.name + " is master")
 				if (narration.time > req.current.options.time * 1000) {
 					module.reset(req,null,channel.id);
-					if (!c.quiet) console.log("reset master: " + channel.name)
+					if (!c.quiet) console.log("[narration] reset master: " + channel.name)
 					
 					// Force Reset Slaves.
 					for (var _c in show.channels) if (show.channels.hasOwnProperty(_c)) {	
@@ -772,10 +777,25 @@ module.exports = function(c,utils) {
 				)
 //				console.log("History length: " + narration.history.length)
 //				console.log("------------------------")
+
+				// Cloning Narration Data into Slave channels
+				for (var _c in show.channels) if (show.channels.hasOwnProperty(_c)) {	
+					if (show.channels[_c].master == channel.name) {
+						var _id = show.channels[_c].id;
+						if (show.narration[_id].master_time > narration.time || show.narration[_id].master_narrations == undefined) {
+							show.narration[_id].master_narrations = [];
+						}
+						if (!c.quiet) console.log("[narration] "+channel.name+" is pushing into " + show.channels[_c].name+" at "+narration.time)										
+						show.narration[_id].master_time = narration.time;
+						show.narration[_id].master_narrations.push(util._extend({master_time: narration.time},narration));
+					}
+				}
+
 				narration.isnew 	= false;
 				narration.reset 	= false;
 				narration.cursor 	= match.content.cursor
 				narration.time   	+= parseFloat(clip.parameter.duration)-req.current.options.preroll;		
+
 			}
 			// No Element found with a score higher than minimal score
 			// Creating fake cursor, advancing time

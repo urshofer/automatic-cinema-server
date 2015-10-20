@@ -50,17 +50,6 @@ module.exports = function(c) {
 	  };
 	})();
 
-	/* Load Show Data from File */
-	module._loadData = function() {
-		if (fs.existsSync(filename)) {
-			userdata = JSON.parse(fs.readFileSync(filename, 'utf8'));
-		}
-		else {
-			fs.writeFileSync(filename, {}, 'utf8');
-			userdata =  {};
-		}
-	}
-
 	/* Store Data in File */
 	module._storeData = function() {
 		if (fs.existsSync(filename)) {
@@ -69,6 +58,18 @@ module.exports = function(c) {
 		}
 		return false;
 	}
+
+	/* Load Show Data from File */
+	module._loadData = function() {
+		if (fs.existsSync(filename)) {
+			userdata = JSON.parse(fs.readFileSync(filename, 'utf8'));
+		}
+		else {
+			userdata =  {};
+			module._storeData();
+		}
+	}
+
 	
 	module.findById = function(id, callback) {
 //		console.log("checking: " + id);

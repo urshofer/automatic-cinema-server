@@ -1,18 +1,18 @@
 #!/bin/sh
-jx package acs.js AutomaticCinemaServer -native
-rm -R AutomaticCinemaServer
+rm -R ACServer
 rm AutomaticCinemaServer*
-mkdir AutomaticCinemaServer
-cp AutomaticCinemaServer ./AutomaticCinemaServer/
-cp start.sh ./AutomaticCinemaServer/
-mkdir ./AutomaticCinemaServer/json
-mkdir ./AutomaticCinemaServer/tmp
-cp -a html ./AutomaticCinemaServer
+jx package acs.js AutomaticCinemaServer -native
+mkdir ACServer
+cp AutomaticCinemaServer ./ACServer/
+cp start.sh ./ACServer/
+mkdir ./ACServer/json
+mkdir ./ACServer/tmp
+cp -a html ./ACServer
 
 sips -i icon-server.png
 DeRez -only icns icon-server.png > tmpicns.rsrc
-Rez -append tmpicns.rsrc -o ./AutomaticCinemaServer/AutomaticCinemaServer
-SetFile -a C ./AutomaticCinemaServer/AutomaticCinemaServer
+Rez -append tmpicns.rsrc -o ./ACServer/AutomaticCinemaServer
+SetFile -a C ./ACServer/AutomaticCinemaServer
 rm tmpicns.rsrc
 
-tar -cvzf AutomaticCinemaServer.tgz AutomaticCinemaServer
+tar -cvzf AutomaticCinemaServer.tgz ACServer

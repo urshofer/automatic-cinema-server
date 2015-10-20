@@ -66,7 +66,7 @@ module.exports = function(c) {
 		}
 		else {
 			userdata =  {};
-			module._storeData();
+			fs.writeFileSync(filename, JSON.stringify(userdata), 'utf8');
 		}
 	}
 

@@ -6,26 +6,35 @@ In order to run the Automatic Cinema Server, you need to install
 
 - Node: ```http://nodejs.org```
 - NPM: ```https://www.npmjs.org/doc/README.html```
-- ImageMagick
-- FFmpeg
+- ImageMagick and FFMpeg
 
-FFmpeg and ImageMagick exist in precompiled versions for various platforms:
+FFMpeg and ImageMagick exist in precompiled versions for OSX:
 
-- OSX: ```http://ffmpegmac.net``` and ```http://www.imagemagick.org/download/binaries/ImageMagick-x86_64-apple-darwin13.2.0.tar.gz```
-- Linux: Use apt-get or similiar packet managers depending on your distribution.
+- FFMpeg: ```http://ffmpegmac.net```
+- ImageMagick: ```http://www.imagemagick.org/download/binaries/ImageMagick-x86_64-apple-darwin13.2.0.tar.gz```
+
+Linux: Use apt-get or similiar packet managers depending on your distribution.
 
 **Installation**
 
 - Download or Clone the Server from ```https://github.com/urshofer/automatic-cinema-server```
-- Install the dependencies: ```npm install``` or ```sudo npm install```in the directory you just checked out the files
+- Change into the directory and install the dependencies: 
+  
+```
+$ npm install (or) 
+$ sudo npm install
+```
+
 - Edit the configuration file: _config.js
 
 **Configuration**
 
 - Most likely, you need to change the path to ImageMagick's convert command and ffmpeg:
-
-    ffmpeg_path: 		__dirname + '/bin/osx/ffmpeg/bin/'
-    convert_path: 		'/opt/ImageMagick/bin/'
+  
+```
+ffmpeg_path: 		__dirname + '/bin/osx/ffmpeg/bin/'
+convert_path: 		'/opt/ImageMagick/bin/'
+```
 
 - The server uses Port 3000 by default. Unless you have other services running or firewall restrictions, you can leave the default settings.
 - Most configuration values are self explanatory.
@@ -35,10 +44,14 @@ FFmpeg and ImageMagick exist in precompiled versions for various platforms:
 
 - To start the server in non daemon mode: 
 
-    $ node acs.js
+```
+$ node acs.js
+```
 
 - To run the script in daemon mode, you can use the forever package:
 
-    $ sudo npm install forever -g
-    $ forever start acs.js
-    $ forever stop acs.js
+```
+$ sudo npm install forever -g
+$ forever start acs.js
+$ forever stop acs.js
+```

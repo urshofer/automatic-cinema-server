@@ -1,6 +1,7 @@
 #!/bin/sh
 jx package acs.js AutomaticCinemaServer -native
 rm -R AutomaticCinemaServer
+rm AutomaticCinemaServer*
 mkdir AutomaticCinemaServer
 cp AutomaticCinemaServer ./AutomaticCinemaServer/
 cp start.sh ./AutomaticCinemaServer/

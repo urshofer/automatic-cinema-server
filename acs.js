@@ -30,91 +30,82 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 */
 
-var config = require('./_config.js');
 
-if (config.html) console.log("<html>\
-<head>\
-<style>\
-body {\
-display: block;\
-position: absolute;\
-left: 0;\
-right: 0;\
-top: 220px;\
-bottom: 0;\
-overflow: none;\
-overflow-y: scroll;\
-white-space: pre;\
-font: normal normal normal 1em Courier, \"Courier New\", monospace;\
-}\
-div {\
-z-index: 1;\
-white-space: normal;\
-position: fixed;\
-right: 0;\
-top: 0;\
-left: 0;\
-height: 190px;\
-font: normal normal normal 1em Arial, sans-serif;\
-padding: 1em;\
-padding-bottom: 0.5em;\
-background: rgba(130,130,130,0.8);\
-}\
-.blur {\
-z-index: 0;\
-filter: blur(10px);\
--webkit-filter: blur(10px);\
--moz-filter: blur(10px);\
-}\
-h1 {\
-	font-size: 1.2em;\
-}\
-hr {\
-	height: 0;\
-	border-bottom: 1px solid #000;\
-}\
-</style>\
-</head>\
-<body>\
-<div>")
+GLOBAL.lib_name = process.argv[2] ? process.argv[2] : __dirname;
+
+/* Load Library */
+var config = require('./_config.js')
+
+
+
+
+if (config.html) console.log(config.htmlheader)
 console.log(config.html?"<hr>":"-----------------------------------------------------")
 console.log(config.html?"<h1>Automatic Cinema Server</h1>":"- Automatic Cinema Server                           -")
 console.log(config.html?"<hr>":"-                                                   -")
-
-
-
-/* Load Library */
-
-var express = require('express'),
-	bodyParser = require('body-parser'),
-	cors = require('cors'),
-	path = require('path')
-	util = require('util'),
-	ip = require("ip"),
-	app = express(),
-	utils = require('./_utils.js')(config),
-	narration = require('./_narration.js')(config, utils),	
-	utils.narration = narration,
-	fs = require('fs'),
-	mime = require('mime'),
-	app.use(bodyParser.urlencoded({
-		limit: '50000mb',
-		extended: true,
-		parameterLimit: 1000000
-	})),
-	app.use(bodyParser.json({
-		limit: '50000mb'
-	})),
-	app.use(cors())
-
-
+console.log(config.html?"<p>Usage: node acs.js [libdir]</p>":"- Usage: node acs.js [libdir (default: _dirname)]   -")
 
 /* Persistent Cache */
-
 var _cache_ = {};
 
+/* Requirements */
+var express 	= require('express'),
+	bodyParser 	= require('body-parser'),
+	cors 		= require('cors'),
+	path 		= require('path')
+	util 		= require('util'),
+	exec 		= require('child_process').exec,
+	ip 			= require("ip"),
+	app 		= express(),
+	utils 		= require('./_utils.js')(config),
+	narration 	= require('./_narration.js')(config, utils),	
+	utils.narration = narration,
+	fs 			= require('fs'),
+	mime 		= require('mime'),
+	users 		= require('./_db.users.js')(config),
+	db			= require('./_db.gridstore.js')(config)
 
 
+/* Express Configuration */
+app.use(bodyParser.urlencoded({
+	limit: '50000mb',
+	extended: true,
+	parameterLimit: 1000000
+})),
+app.use(bodyParser.json({
+	limit: '50000mb'
+})),
+app.use(cors())
+
+/* File Checks */
+exec('"' + config.convert_path + 'convert" --version', 
+	function(err, stdout, stderr) {
+		if (err) {
+			console.log("Exit - ImageMagick not found or not in path");
+			process.exit();
+		}
+	}
+)
+exec('"' + config.ffmpeg_path + 'ffmpeg" -version', 
+	function(err, stdout, stderr) {
+		if (err) {
+			console.log("Exit - ffmpeg not found or not in path");
+			process.exit();
+		}
+	}
+)
+try {
+	var stats = fs.statSync(GLOBAL.lib_name);
+	if (!stats.isDirectory()) {
+		console.log("Exit - "+GLOBAL.lib_name+" is not a directory");
+		process.exit();
+	}
+} catch (e) {
+	console.log("Exit - Libdir "+GLOBAL.lib_name+" does not exist");
+	process.exit();
+}
+
+/* Some Prototypes */
 
 Array.prototype.clean = function(deleteValue) {
   for (var i = 0; i < this.length; i++) {
@@ -125,10 +116,6 @@ Array.prototype.clean = function(deleteValue) {
   }
   return this;
 };
-
-
-var users  = require('./_db.users.js')(config);
-var db	   = require('./_db.gridstore.js')(config);
 
 /* Exit Handlers */
 process.stdin.resume();//so the program will not close instantly
@@ -1145,5 +1132,6 @@ app.get('/', function(req, res, next) {
 console.log(config.html?"<p>Server running on</p>":"- Server running on                                 -")
 console.log(config.html?"<p class='address'><a target='_blank' href='http://" + ip.address() + ":" + config.port + "'>http://" + ip.address() + ":" + config.port + "</a></p>":"- \033[31m" + "http://" + ip.address() + ":" + config.port + "\033[0m                           -")		
 console.log(config.html?"<hr>":"-----------------------------------------------------")
-if (config.html) console.log("</div><div class='blur'></div>");
+
+if (config.html) console.log(config.htmlfooter);
 app.listen(config.port)

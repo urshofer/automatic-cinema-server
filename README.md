@@ -25,15 +25,26 @@ $ npm install (or)
 $ sudo npm install
 ```
 
-- Edit the configuration file: _config.js
 
 **Configuration**
 
-- Most likely, you need to change the path to ImageMagick's convert command and ffmpeg:
+- Probably you need to change the path to ImageMagick's convert command and ffmpeg. If you leave the variables empty, the server assumes that ffmpeg and convert are within the path environment.
   
 ```
+Examples:
+
+_Subdirectory of the server_
 ffmpeg_path: 		__dirname + '/bin/osx/ffmpeg/bin/'
+
+_Subdirectory of the library directory (whereas subdirectory defaults to __dirname)_
+ffmpeg_path: 		GLOBAL.lib_name + '/bin/osx/ffmpeg/bin/'
+
+_Absolute path_
 convert_path: 		'/opt/ImageMagick/bin/'
+
+_Default settings_
+convert_path: 		''
+
 ```
 
 - The server uses Port 3000 by default. Unless you have other services running or firewall restrictions, you can leave the default settings.
@@ -42,10 +53,10 @@ convert_path: 		'/opt/ImageMagick/bin/'
 
 **Run the Server**
 
-- To start the server in non daemon mode: 
+- To start the server in non daemon mode. If libdir is omitted, it will be substituted by __dirname, the directory the server script is stored.
 
 ```
-$ node acs.js
+$ node acs.js [libdir]
 ```
 
 - To run the script in daemon mode, you can use the forever package:

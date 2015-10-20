@@ -11,7 +11,7 @@ In order to run the Automatic Cinema Server, you need to install
 FFMpeg and ImageMagick exist in precompiled versions for OSX:
 
 - FFMpeg: ```http://ffmpegmac.net```
-- ImageMagick: ```http://www.imagemagick.org/download/binaries/ImageMagick-x86_64-apple-darwin13.2.0.tar.gz```
+- ImageMagick: ```http://www.imagemagick.org/download/binaries/ImageMagick-x86_64-apple-darwin13.2.0.tar.gz``` or as a bundled installer ```http://cactuslab.com/imagemagick/```
 
 Linux: Use apt-get or similiar packet managers depending on your distribution.
 

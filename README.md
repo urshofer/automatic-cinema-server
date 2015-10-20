@@ -8,7 +8,7 @@ In order to run the Automatic Cinema Server, you need to install
 - NPM: ```https://www.npmjs.org/doc/README.html```
 - ImageMagick and FFMpeg
 
-FFMpeg and ImageMagick exist in precompiled versions for OSX:
+FFMpeg and ImageMagick exist in precompiled versions for OSX. Make sure that you put the ffmpeg binaries somwhere within the path environment.
 
 - FFMpeg: ```http://ffmpegmac.net```
 - ImageMagick: ```http://www.imagemagick.org/download/binaries/ImageMagick-x86_64-apple-darwin13.2.0.tar.gz``` or as a bundled installer ```http://cactuslab.com/imagemagick/```

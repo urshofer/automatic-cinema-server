@@ -53,10 +53,10 @@ convert_path: 		''
 
 **Run the Server**
 
-- To start the server in non daemon mode. If libdir is omitted, it will be substituted by __dirname, the directory the server script is stored.
+- To start the server in non daemon mode. If the -l=libdir option is omitted, it will be substituted by __dirname, the directory the server script is stored.
 
 ```
-$ node acs.js [libdir]
+$ node acs.js [-l=libdir]
 ```
 
 - To run the script in daemon mode, you can use the forever package:

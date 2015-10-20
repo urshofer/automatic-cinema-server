@@ -30,8 +30,8 @@
     Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 */
 
-
-GLOBAL.lib_name = process.argv[2] ? process.argv[2] : __dirname;
+var lParam = process.argv[process.argv.length - 1];
+GLOBAL.lib_name = lParam.substr(0, 3)=="-l=" ? lParam.substr(3) : __dirname;
 
 /* Load Library */
 var config = require('./_config.js')
@@ -43,7 +43,7 @@ if (config.html) console.log(config.htmlheader)
 console.log(config.html?"<hr>":"-----------------------------------------------------")
 console.log(config.html?"<h1>Automatic Cinema Server</h1>":"- Automatic Cinema Server                           -")
 console.log(config.html?"<hr>":"-                                                   -")
-console.log(config.html?"<p>Usage: node acs.js [libdir]</p>":"- Usage: node acs.js [libdir (default: _dirname)]   -")
+console.log(config.html?"<p>Usage: node acs.js [libdir]</p>":"- Usage: node acs.js [-l=libdir (optional)]         -")
 
 /* Persistent Cache */
 var _cache_ = {};

@@ -31,4 +31,6 @@ node_modules
 bin
 ffmpeg
 mongo
-tmp
+corenlp
+json/_*
+json/gridstore

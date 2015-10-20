@@ -29,7 +29,9 @@
 	"bpm.js": "1.0.3",
 	"MD5": "1.2.2",
 	"wordwrap": "1.0.0",
-	"pureimage": "0.0.11"
+	"pureimage": "0.0.11",
+    "stanford-corenlp": "0.3.2",
+    "java": "0.5.4"
   },
   "devDependencies": {
     "expect.js": "0.3.1",

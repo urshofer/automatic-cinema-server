@@ -86,7 +86,6 @@ console.log(config.html?"<hr>":"-                                               
 /* Load Library */
 
 var express = require('express'),
-	mongoskin = require('mongoskin'),
 	bodyParser = require('body-parser'),
 	cors = require('cors'),
 	path = require('path')
@@ -97,29 +96,25 @@ var express = require('express'),
 	narration = require('./_narration.js')(config, utils),	
 	utils.narration = narration,
 	fs = require('fs'),
-	mime = require('mime')
-	app.use(bodyParser({limit: '5000mb'}))
+	mime = require('mime'),
+	app.use(bodyParser.urlencoded({
+		limit: '50000mb',
+		extended: true,
+		parameterLimit: 1000000
+	})),
+	app.use(bodyParser.json({
+		limit: '50000mb'
+	})),
 	app.use(cors())
 
 
-/* Database Setup */
 
-var db = mongoskin.db(config.mongo, {
-	safe: true,
-	auto_reconnect: true
-})
+/* Persistent Cache */
 
-db.open(function (err) {
-	if (err) {
-		console.log("-----------------------------------------------------")
-		console.log("- Could not connect to MongoDB. Make sure you have  -")
-		console.log("- a Database running and the _config file correctly -")	
-		console.log("- set up.                                           -")		
-		console.log("-----------------------------------------------------")
-		process.exit()
-	}
-})
- 
+var _cache_ = {};
+
+
+
 
 Array.prototype.clean = function(deleteValue) {
   for (var i = 0; i < this.length; i++) {
@@ -132,18 +127,38 @@ Array.prototype.clean = function(deleteValue) {
 };
 
 
-var users = db.collection('users');
-users.ensureIndex({
-	"username": 1
-}, {
-	unique: true,
-	dropDups: true,
-	sparse: true
-}, function(err, replies) {})
-users.bind(require('./_db.users.js'));
+var users  = require('./_db.users.js')(config);
+var db	   = require('./_db.gridstore.js')(config);
 
+/* Exit Handlers */
+process.stdin.resume();//so the program will not close instantly
+function exitHandler(err) {
+	if (Object.keys(_cache_).length === 0) {
+		console.log("Exit - no cache");
+		process.exit();
+	}
+	for (var _id in _cache_) if (_cache_.hasOwnProperty(_id)) {
+		var _last_id = _id;
+		utils.update(users, {id: _id, current: _cache_[_id]}, true).then(function(data) {
+			console.log('store cache ' + _id);			
+			if (_last_id == _id) {
+				process.exit()
+			}
+		});
+	}
+}
+/*process.on('exit', exitHandler.bind(null));*/
+process.on('SIGINT', exitHandler.bind(null));
+process.on('SIGTERM', exitHandler.bind(null));
 
-app.param(':checkSession', function(req, res, next, checkSession) {
+app.param('checkSession', function(req, res, next, checkSession) {
+	/* Load from Cache */
+	if (_cache_[checkSession]) {
+		req.current = _cache_[checkSession]
+		req.id = checkSession
+		return next()
+	}
+	/* Load from Mongo if Cache is empty */	
 	users.findById(checkSession, function(e, results) {
 		if (e || results == null) {
 			res.send(utils.error(100));
@@ -152,6 +167,16 @@ app.param(':checkSession', function(req, res, next, checkSession) {
 		} else {
 			req.current = results
 			req.id = checkSession
+			
+			/* Load Show Data from File */
+			var _fd = config.json_dir + "/_show_" + req.id + ".json"
+			if (fs.existsSync(_fd)) {
+				req.current.shows = JSON.parse(fs.readFileSync(_fd, 'utf8'));
+				console.log("Load show data from file.")				
+			}
+			
+			_cache_[checkSession] = req.current;
+			
 			if (req.current.options == null) {
 				console.log("no options stored for user. resetting.")
 				req.current.options = {
@@ -245,6 +270,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 	}
 	
 	var returndata = true;
+	var do_sync = false;
 
 	switch (req.params.function) {
 		case 'addshow':
@@ -261,6 +287,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 				channels: [],
 				clips: []
 			})
+			do_sync = true;
 			break;
 		case 'addchannel':
 			if (req.body.name == null || req.body.suffix == null) {
@@ -286,6 +313,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 					return;
 				}
 			}
+			do_sync = true;
 			break;
 		case 'updatechannel':
 			var c = utils.findchannelbyid(req.body.id, req.current.shows[req.current.options.show].channels);
@@ -302,10 +330,12 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 				res.send(utils.error(116));				
 				return;
 			}			
+			do_sync = true;
 			break;
 		case 'addstyle':
 		case 'addcontent':
 		case 'addtarget':
+			do_sync = true;
 			if (req.body.name == null) {
 				res.send(utils.error(102, "No Name Set"));
 				return
@@ -377,9 +407,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 					_nodes.clean(null);
 				}
 			}
-			
-			
-			
+			do_sync = true;			
 			req.current.shows[req.current.options.show].contents[req.current.options.content].data = req.body.data;
 			break;
 
@@ -411,6 +439,7 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 			if (req.body.time != null) req.current.options.time = req.body.time
 			if (req.body.preroll != null) req.current.options.preroll = req.body.preroll
 			console.log("Updated Config")
+			do_sync = true;
 			break;
 		default:
 			res.send(utils.error(101, req.params.function));
@@ -421,11 +450,13 @@ app.post('/Store/:checkSession/:function', function(req, res, next) {
 	utils.update(users, req).then(function(data) {
 		if (data.Error) res.send(data);
 		else {
-			utils.synchronize(users, req, db).then(function(res){
-				if (res===false) {
-					console.log("[sync] Failed!");
-				}
-			});
+			if (do_sync) {
+				utils.synchronize(users, req, db).then(function(res){
+					if (res===false) {
+						console.log("[sync] Failed!");
+					}
+				});
+			}
 			res.send(returndata);
 		}
 	});
@@ -775,11 +806,15 @@ app.post('/StoreFile/:checkSession', function(req, res, next) {
 	<form>
 		<input type="hidden" id="meta" name="meta" value="jsondata">
  		<input type="file" id="url" name="url">
+		<input type="hidden" id="nlp" name="nlp" value="jsondata">		// Optional: Free form Sentence in english for NLP Processing
 	</form>
   
 */
 
 app.post('/StoreFileAnnotaded/:checkSession', function(req, res, next) {
+	
+	var _t = Date.now();
+	
 	if (req.current.options.show == null) {
 		res.send(utils.error(103));
 		return;
@@ -790,9 +825,9 @@ app.post('/StoreFileAnnotaded/:checkSession', function(req, res, next) {
 	// Process 
 	utils.processfileupload(req, res, db, users).then(function(data) {
 		if (!config.quiet) console.log("Files processed.");
-//		if (!config.quiet) console.log(util.inspect(data, false,null))					
+		if (!config.quiet) console.log(util.inspect(data, false,null))					
 		if (data.Error) {
-			if (!config.quiet) console.log("Error Uploading:" + data.Error);
+			console.log("[StoreFileAnnotaded] Error Uploading: " + data.Error);
 			res.send(data);
 			return;
 		} else {
@@ -802,23 +837,38 @@ app.post('/StoreFileAnnotaded/:checkSession', function(req, res, next) {
 					data.fields, 
 					req.current.shows[req.current.options.show].contents[req.current.options.content]
 				);
+			if (!config.quiet) console.log("[StoreFileAnnotaded] addontologymulti DONE.");
+			
+			// Add File to ontology
+			utils.addontologynlp(
+					data.element,
+					data.fields, 
+					req.current.shows[req.current.options.show].contents[req.current.options.content]
+			).then(function(nlpres) {
+				if (!config.quiet) console.log("[StoreFileAnnotaded] addontologynlp " + (nlpres ? "SUCCESS" : "ERROR"));
+				// Store Data
+				utils.update(users, req, true).then(function(store) {
+					if (store.Error) {
+						console.log("[StoreFileAnnotaded] Error Storing: " + store.Error);
+						res.send(store);
+						return;
+					}
+					else {
+						// Sync Contents
+						var final = res;
+						utils.synchronize(users, req, db).then(function(res){
+							if (res===false) {
+								console.log("[StoreFileAnnotaded] Sync Failed!");
+							}
+							else {
+								if (!config.quiet) console.log("[StoreFileAnnotaded] Done: " + data.element.name);
+								if (!config.quiet) console.log("                     Proc: " + (Date.now() - _t) + " ms" );
 
-			// Store Data
-			utils.update(users, req).then(function(store) {
-				if (store.Error) {
-					res.send(store);
-					return;
-				}
-				else {
-					res.send(true);
-					
-					// Sync Contents
-					utils.synchronize(users, req, db).then(function(res){
-						if (res===false) {
-							console.log("[sync] Failed!");
-						}
-					});
-				}
+								final.send(data.element.name);
+							}
+						});
+					}
+				});
 			});
 		}
 	})
@@ -894,6 +944,8 @@ app.get('/Download/:checkSession/:file', function(req, res, next) {
   	File List
 	---------
     Sends a file list
+
+	16.JUNI 2015: ADDED n:show.clips[i].name TO RESULT
   
 */
 
@@ -907,7 +959,8 @@ app.get('/List/:checkSession', function(req, res, next) {
 				list.push({
 					t:config.channel_types[c.typ],
 					f:show.clips[i].file,
-					c:show.clips[i].hash
+					c:show.clips[i].hash,
+					n:show.clips[i].name					
 				})
 			}
 		}
@@ -943,10 +996,12 @@ app.get('/Reset/:checkSession/:channel', function(req, res, next) {
 		res.send(narration.reset(req, users, channel.id, true));
 })
 app.get('/Reset/:checkSession', function(req, res, next) {
+	_t = Date.now();
 	narration.reset(req, users, null, true).then(function(data) {
-					if (data.Error) res.send(data);
-					else res.send(true);
-				});
+		if (data.Error) res.send(data);
+		else res.send(true);
+		if (!config.quiet) console.log ("[reset] took " + (Date.now() - _t) + " ms" );
+	});
 })
 /* 
   	Is Reset
@@ -955,7 +1010,6 @@ app.get('/Reset/:checkSession', function(req, res, next) {
   
 */
 app.post('/SyncState/:checkSession', function(req, res, next) {
-//	console.log("[SyncState] check channels for reset & update live timer")
 	var live = JSON.parse(req.body.data)[0];
 	ret = {}
 	var show = req.current.shows[req.current.options.show];

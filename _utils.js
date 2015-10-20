@@ -31,19 +31,20 @@
 */
 
 
-var fs = require('fs'),
-	q = require("q"),
-	ffmpeg = require('fluent-ffmpeg'),
-	path = require('path'),
-	gm = require('gm'),
-	formidable = require('formidable'),
-	mime = require('mime'),
-	exec = require('child_process').exec,
-	bpmSink = require('bpm.js'),
-	spawn = require('child_process').spawn,
-	md5 = require('MD5'),
-	PImage = require('pureimage'),
-	wrap = require('wordwrap')(0,15,{mode:"hard"});
+var fs 			= require('fs'),
+	q 			= require("q"),
+	ffmpeg 		= require('fluent-ffmpeg'),
+	path 		= require('path'),
+	gm 			= require('gm'),
+	formidable 	= require('formidable'),
+	mime 		= require('mime'),
+	exec 		= require('child_process').exec,
+	bpmSink 	= require('bpm.js'),
+	spawn 		= require('child_process').spawn,
+	md5 		= require('MD5'),
+	PImage 		= require('pureimage'),
+	NLP			= false, // define later if used in config
+	wrap 		= require('wordwrap')(0,15,{mode:"hard"});
 
 	Array.prototype.sum = function () {
 	    var total = 0;
@@ -70,6 +71,15 @@ var fs = require('fs'),
 		var module = {};
 		ffmpeg.setFfmpegPath(c.ffmpeg_path + "ffmpeg")
 		ffmpeg.setFfprobePath(c.ffmpeg_path + "ffprobe")
+		
+		// Initialize Stanford CORE NLP
+		var stanford = false;
+		if (c.nlp) {
+			NLP = require('stanford-corenlp'),
+			stanford = new NLP.StanfordNLP({"nlpPath":"./corenlp","version":"3.5.2"});
+			stanford.loadPipelineSync();
+		}
+
 		
 		// Check temporary dir:
 		fs.exists(c.upload_dir, function (exists) {
@@ -164,16 +174,32 @@ var fs = require('fs'),
 			return e;
 		}
 
-		module.update = function(db, req) {
+		module.update = function(db, req, force) {
+			if (force == undefined) force = false;
 			var deferred = q.defer();
-			db.updateById(req.id, req.current, {
-				safe: true,
-				multi: false
-			}, function(e, result) {
-				if (e && !c.quiet) console.log("Store error")
-				if (e || result == null) deferred.resolve(module.error(100, "Store Error"));
-				else deferred.resolve(true)
-			})
+			if (force || c.safe_mode === true) {
+				var _t = Date.now();
+				
+				/* Create Backup Copy */
+				var _backup = JSON.stringify(req.current.shows);
+				var _fd = c.json_dir + "/_show_" + req.id + ".json"
+				fs.writeFileSync(_fd, _backup, 'utf8');
+
+				
+				db.updateById(req.id, req.current, {
+					safe: true,
+					multi: false
+				}, function(e, result) {
+					console.log (req.id + ": Update Consumed " + (Date.now() - _t) + " ms" );
+
+					if (e && !c.quiet) console.log("Store error")
+					if (e || result == null) deferred.resolve(module.error(100, "Store Error"));
+					else deferred.resolve(true)
+				})
+			}
+			else {
+				deferred.resolve(true);
+			}
 			return deferred.promise;
 		}
 
@@ -758,7 +784,7 @@ var fs = require('fs'),
 				case "addstyle":
 					return([
 						{key:"Scoring",type:1,legends:["Physical vs. Semantical","Minimum Score"],id:module.guid()},
-						{key:"Logic",type:2,legends:["Path Accuracy","Jump Cuts"],id:module.guid()},
+						//{key:"Logic",type:2,legends:["Path Accuracy","Jump Cuts"],id:module.guid()},
 						{key:"Selection",type:2, legends:["Repetition","Randomness"],id:module.guid()}
 					])
 			}
@@ -770,7 +796,7 @@ var fs = require('fs'),
 		    for (var dim in json.data) {
 		        if (json.data.hasOwnProperty(dim)) {
 					if (json.data[dim].Objects==null) json.data[dim].Objects = []
-					json.data[dim].Objects.push([element.name,(dim==data.add_dim)?[data.add_x,data.add_y]:[50,50],element.thumb,(dim==data.add_dim)?false:true])
+					json.data[dim].Objects.push([element.name,(dim==data.add_dim)?[data.add_x,data.add_y]:[.5,.5],element.thumb,(dim==data.add_dim)?false:true])
 		        	if (dim!=data.add_dim) other_dims[dim] = json.data[dim].Keywords
 				}
 		    }						
@@ -779,16 +805,119 @@ var fs = require('fs'),
 
 		// Add an Element into the active ontology data
 		module.addontologymulti = function(element,data,json) {
+			// Containing json data sent from client
 			var _new_coords = JSON.parse(data.meta);
-			for (var dim in _new_coords) {					
-		        if (_new_coords.hasOwnProperty(dim)) {
-					if (!c.quiet) console.log("Adding Dimension " + dim);					
-					if (json.data[dim].Objects==null) json.data[dim].Objects = []
-					for (var i = 0, len = _new_coords[dim].length; i < len; i++) {						
-						json.data[dim].Objects.push([element.name,_new_coords[dim][i],element.thumb,true])						
+			var _nlp = data.nlp ? JSON.parse(data.nlp) : false;
+
+			for (var dim in json.data) {					
+		        if (json.data.hasOwnProperty(dim)) {
+					if (_new_coords[dim]==null || _new_coords[dim].length == 0) {
+						if (_nlp === false || dim != _nlp.dimension) {
+							if (!c.quiet) console.log("Adding Empty Dimension " + dim);					
+							_new_coords[dim] = [];
+							_new_coords[dim].push([.5,.5]);
+						}
+						else {
+							if (!c.quiet) console.log("Skipping " + dim + " - will be populated by NLP");					
+						}
 					}
+					for (var i = 0, len = _new_coords[dim].length; i < len; i++) {						
+						if (json.data[dim].Objects == undefined) {
+							json.data[dim].Objects = [];
+						}
+						json.data[dim].Objects.push([element.name,_new_coords[dim][i],element.thumb,true])		
+					}
+					if (!c.quiet) console.log("Adding Dimension " + dim);					
+					
 				}
 		    }
+		}
+		
+		// Add an Element into the active ontology data
+		module.addontologynlp = function(element,data,json) {
+			var deferred = q.defer();
+			if (data.nlp == undefined) {
+				console.log("Exiting NLP");
+				deferred.resolve(false);
+			}
+			else {
+				var nlp = JSON.parse(data.nlp);
+				if (nlp == undefined || nlp.string == null || nlp.string == "" || stanford.process == undefined || json.data[nlp.dimension] == undefined) {
+					console.log("Exiting NLP");
+					deferred.resolve(false);
+				}
+				else {
+//					console.log("Entering NLP with " + nlp.string + " for Dimension " + nlp.dimension);
+					stanford.process(nlp.string.replace("'s"," with "), function(err, result) {
+						if (!c.quiet) console.log("---------------------------------");
+						var basic_dep = [];
+						if (Array.isArray(result.document.sentences.sentence.dependencies[0].dep))
+							basic_dep = result.document.sentences.sentence.dependencies[0].dep;
+						else
+							basic_dep.push(result.document.sentences.sentence.dependencies[0].dep);
+						
+						if (!c.quiet) console.log(basic_dep);
+						if (!c.quiet) console.log(basic_dep.length);
+						if (!c.quiet) console.log("---------------------------------");
+						
+						var _new_coords = {};
+						// Check Words
+						for (var i = 0, len = basic_dep.length; i < len; i++) {
+							var nlp_dependencies = basic_dep[i];
+							if (!c.quiet) console.log("---------------------------------");
+							if (['root','dep','amod','nmod','compound', 'nsubj'].indexOf(nlp_dependencies.$.type) >= 0) {
+								var _from 	= nlp_dependencies.governor._
+								var _to 	= nlp_dependencies.dependent._						
+								if (!c.quiet) console.log("From " + _from + " to " + _to)
+
+								// Check From & To
+								var _key_from = 
+									_key_to = false;
+						
+								_key_from 	= narration._getkeywordindex(nlp.dimension,_from, json.data);
+								_key_to 	= narration._getkeywordindex(nlp.dimension,_to, json.data);
+						
+								// Add if not existing
+								if (!_key_from) {
+									if (!c.quiet) console.log("From Key Not Found")
+									_key_from = narration._addkeywordindex(nlp.dimension,_from, json.data, _key_to);
+								}
+								if (!_key_to) {
+									if (!c.quiet) console.log("To Key Not Found")									
+									_key_to = narration._addkeywordindex(nlp.dimension,_to, json.data, _key_from);
+								}
+
+								if (!c.quiet) console.log("Key from " + _key_from + " to " + _key_to);
+
+								// Add Node if at least one key is new
+								if (!narration._checknode(_from, _to, json.data, nlp.dimension)) {
+									if (json.data[nlp.dimension].Nodes == undefined) {
+										json.data[nlp.dimension].Nodes = [];
+									}
+									json.data[nlp.dimension].Nodes.push([_from, _to , (nlp_dependencies.$.type == "root" ? 2 : 1)]);
+									if (!c.quiet) console.log("Key from " + _from + " to " + _to + " with type " + nlp_dependencies.$.type);
+								}
+								
+								// Store Coordinates
+								if (_from != "ROOT")
+									_new_coords[_from] = json.data[nlp.dimension].Keywords[_key_from][1];
+								if (_to != "ROOT")
+									_new_coords[_to]   = json.data[nlp.dimension].Keywords[_key_to][1];
+							}					
+						}
+						// Pushing Element
+						for (var _c in _new_coords) if (_new_coords.hasOwnProperty(_c)) {
+							if (!c.quiet) console.log("Pushing " + element.thumb + " into " + nlp.dimension + " at " + _new_coords[_c][0] + "/" + _new_coords[_c][1]);
+							if (json.data[nlp.dimension].Objects == undefined) {
+								json.data[nlp.dimension].Objects = [];
+							}
+							json.data[nlp.dimension].Objects.push([element.name,_new_coords[_c],element.thumb,true])						
+						}
+						deferred.resolve(true);
+					});
+				}
+			}
+			return deferred.promise;
 		}
 				
 		module.annotate = function(data, dim, x, y, name, prev) {
@@ -881,6 +1010,8 @@ var fs = require('fs'),
 				//           Delete Files not in ontology				
 				// ---------------------------------------------
 				
+				// accumulate Clips of the current active Dimension set in the Controller (_active)
+				
 				var count = 0;
 				var clipsinontology = {};
     			for (var d in currentcontent.data) if (currentcontent.data.hasOwnProperty(d)) {
@@ -948,7 +1079,7 @@ var fs = require('fs'),
 							}
 							currentstyle.data[ch].clean(null);
 							if (!f) {
-								currentstyle.data[ch].push({key:p,type:4,legends:["Weight","Value"],id:module.guid()})
+								currentstyle.data[ch].push({key:p,type:4,legends:["Diff. to previous Element &larr; Scoring &rarr; Diff. to absolute Value","Minimal &uarr; Absolute Value &darr; Maximal"],id:module.guid()})
 								if (!c.quiet) console.log("[sync] push parameter " + p)
 							}
 						}
@@ -1024,42 +1155,50 @@ var fs = require('fs'),
 					del = 0,
 					add = 0,
 					keep = 0;
-				
+
+				var _t = Date.now();				 
     			for (var i = 0, len = show.contents.length; i < len; i++) {
 					var dims = show.contents[i].data		
 					if (dims==null) dims = module.createemptydata("addcontent")									
 					for (var d in dims) if (dims.hasOwnProperty(d)) {
+
+						if (dims[d].Objects == null) {
+							dims[d].Objects = []
+						}
+						
+						/* Create Lookup Table of Elements in Ontology Dimension */
+						var _lookup = {};
+						for (var o in dims[d].Objects) if (dims[d].Objects.hasOwnProperty(o)) {	
+							_lookup[dims[d].Objects[o][0]] = o;
+
+							// Delete from Ontology if no Clipname existing
+							
+							if (clipnames[dims[d].Objects[o][0]]==null) {
+								dims[d].Objects[o] = null;
+								del++;
+							}
+							
+						}					
+						dims[d].Objects.clean(null);
+
 						for (var cl in clipnames) if (clipnames.hasOwnProperty(cl)) {
 							var f = false;
-							if (dims[d].Objects == null) {
-								dims[d].Objects = []
-							}
-							for (var o in dims[d].Objects) if (dims[d].Objects.hasOwnProperty(o)) {
 
-								// Mark to add
-								if (dims[d].Objects[o][0] == cl) {
-									f = true;
-								}
-								// Step One: Delete nonexisting Material
-								if (clipnames[dims[d].Objects[o][0]]==null) {
-									dims[d].Objects[o] = null;
-									del++;
-								}
-							}	
-							dims[d].Objects.clean(null);
-							if (f===false) {
-								dims[d].Objects.push([cl,[50,50],clipnames[cl],true])
-								add++;
+							
+							// Keep in ontology if in lookup table
+							if (_lookup[cl] != null) {
+								f = true;
+								keep++;
 							}
 							else {
-								keep++;
+								dims[d].Objects.push([cl,[.5,.5],clipnames[cl],true])
+								add++;
 							}
 						}							
 					}				
 					count++
 				}	
-				if (!c.quiet) console.log("[sync] Synced " + count + " Contents (Del: "+del+" Add: "+add+ " Keep: "+keep+ ")")
-
+				if (!c.quiet) console.log("[sync] Synced " + count + " Contents (Del: "+del+" Add: "+add+ " Keep: "+keep+ " Took " + (Date.now()- _t) + " ms)")
 
 				// Step four: Sync content with targets
 				// ---------------------------------------------

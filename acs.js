@@ -918,7 +918,7 @@ app.get('/Download/:checkSession/:file', function(req, res, next) {
 			gs.read(function(err, data) {
 		        res.writeHead(200, {
 		            'Content-Type': mime.lookup(d.filename),
-		            'Content-Length': d.length
+		            'Content-Length': d.length.size
 		        });
 		        res.end(data);
 //				db.close();

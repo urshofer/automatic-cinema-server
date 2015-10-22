@@ -6,7 +6,9 @@ mkdir ACServer
 cp AutomaticCinemaServer ./ACServer/
 cp start.sh ./ACServer/
 mkdir ./ACServer/json
+touch ./ACServer/json/.blank
 mkdir ./ACServer/tmp
+touch ./ACServer/tmp/.blank
 cp -a html ./ACServer
 
 sips -i icon-server.png
